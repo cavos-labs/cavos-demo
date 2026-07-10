@@ -109,7 +109,7 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
           <div className="flex items-center gap-3">
             <span className="hidden text-[13px] text-muted sm:block">Cavos takes ~5 minutes to set up</span>
             <a
-              href="https://cavos.xyz/register"
+              href="https://cavos.xyz/login"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.98]"
