@@ -3,13 +3,19 @@
 import { useState } from 'react';
 import { useCavos } from '@cavos/kit/react';
 import { Check, Copy, ArrowUpRight, LogOut } from 'lucide-react';
+import { BalancePanel } from './devtools/BalancePanel';
+import { SendPanel } from './devtools/SendPanel';
+import { SignPanel } from './devtools/SignPanel';
+import { SecurityPanel } from './devtools/SecurityPanel';
+import { CHAINS, type Chain } from '@/lib/chains';
 
 function shorten(s: string, lead = 6, tail = 6) {
   return s && s.length > lead + tail ? `${s.slice(0, lead)}…${s.slice(-tail)}` : s;
 }
 
-export function DevTools({ configCode }: { configCode: string }) {
+export function DevTools({ configCode, chain }: { configCode: string; chain: Chain }) {
   const { address, user, logout } = useCavos();
+  const meta = CHAINS[chain];
   const [copiedAddr, setCopiedAddr] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -40,7 +46,7 @@ export function DevTools({ configCode }: { configCode: string }) {
       {/* Wallet address */}
       <div className="mt-5">
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-          device-signer wallet · solana devnet
+          device-signer wallet · {meta.label} testnet
         </p>
         <div className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5">
           <code className="min-w-0 flex-1 truncate font-mono text-[13px] font-medium text-ink">
@@ -58,23 +64,38 @@ export function DevTools({ configCode }: { configCode: string }) {
         </div>
         {address && (
           <a
-            href={`https://explorer.solana.com/address/${address}?cluster=devnet`}
+            href={meta.explorer(address, 'address')}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand hover:text-brand-hover"
           >
-            View on Solana Explorer
+            View on {meta.label} Explorer
             <ArrowUpRight size={13} />
           </a>
         )}
       </div>
 
+      {/* ── Functional sections ── */}
+      <div className="mt-6 space-y-5 border-t border-line pt-5">
+        <BalancePanel chain={chain} />
+      </div>
+
+      <div className="mt-5 border-t border-line pt-5">
+        <SendPanel chain={chain} />
+      </div>
+
+      <div className="mt-5 border-t border-line pt-5">
+        <SignPanel chain={chain} />
+      </div>
+
+      <div className="mt-5 border-t border-line pt-5">
+        <SecurityPanel />
+      </div>
+
       {/* Export config */}
-      <div className="mt-6">
+      <div className="mt-6 border-t border-line pt-5">
         <div className="mb-2 flex items-center justify-between">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-            your config
-          </p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">your config</p>
           <button
             onClick={() => copy(configCode, 'code')}
             className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand hover:text-brand-hover"

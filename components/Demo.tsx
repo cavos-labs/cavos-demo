@@ -1,44 +1,85 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CavosAuthModal, useCavos } from '@cavos/kit/react';
-import { ArrowRight, Copy, Check, Sparkles, Lock, Compass, Code2 } from 'lucide-react';
+import { ArrowRight, Copy, Check, Compass, Wallet } from 'lucide-react';
 import { CavosMark } from './CavosMark';
+import { CvSpark, CvCode, CvShield } from './CavosIcons';
 import { CustomizePanel, type Background, type ProviderKey } from './CustomizePanel';
 import { DevTools } from './DevTools';
+import type { Chain } from '@/lib/chains';
 
-const BG_MAP: Record<Background, { theme: 'light' | 'dark'; backgroundColor: string }> = {
+// Mirrors the kit's internal mobile breakpoint (max-width: 640px) so the
+// launch-button UX switches at exactly the same width the modal becomes a
+// bottom sheet.
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
+
+const BG_MAP: Record<Exclude<Background, 'custom'>, { theme: 'light' | 'dark'; backgroundColor: string }> = {
   white: { theme: 'light', backgroundColor: '#ffffff' },
   dark: { theme: 'dark', backgroundColor: '#0A0A0F' },
   soft: { theme: 'light', backgroundColor: '#F4F4F7' },
 };
 
-export function Demo() {
+// Relative luminance of a hex color → 'light' or 'dark' theme, so the modal
+// picks readable text/surfaces for any custom background the user picks.
+function themeForHex(hex: string): 'light' | 'dark' {
+  const m = hex.replace('#', '');
+  if (m.length !== 6) return 'light';
+  const r = parseInt(m.slice(0, 2), 16) / 255;
+  const g = parseInt(m.slice(2, 4), 16) / 255;
+  const b = parseInt(m.slice(4, 6), 16) / 255;
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return L > 0.45 ? 'light' : 'dark';
+}
+
+export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) => void }) {
   const { walletStatus } = useCavos();
+  const isMobile = useIsMobile();
+  const [authOpen, setAuthOpen] = useState(false);
 
   // ── Customize state ──
   // appName / appLogo start empty: the kit falls back to the Cavos star + a
   // "Sign in or sign up" heading, so the default state is Cavos-branded.
   const [background, setBackground] = useState<Background>('white');
+  const [customBg, setCustomBg] = useState('#ffffff');
   const [accent, setAccent] = useState('#402AFF');
   const [appName, setAppName] = useState('');
   const [appLogo, setAppLogo] = useState('');
   const [radius, setRadius] = useState(16);
   const [providers, setProviders] = useState<ProviderKey[]>(['email', 'google', 'apple']);
 
-  const { theme, backgroundColor } = BG_MAP[background];
+  const { theme, backgroundColor } =
+    background === 'custom'
+      ? { theme: themeForHex(customBg), backgroundColor: customBg }
+      : BG_MAP[background];
   const isReady = walletStatus.isReady;
 
-  const configCode = useMemo(
-    () =>
-      `import { CavosProvider } from '@cavos/kit/react';
+  const configCode = useMemo(() => {
+    const chainExtras =
+      chain === 'solana'
+        ? `\n    rpcUrl: 'YOUR_SOLANA_RPC',`
+        : chain === 'starknet'
+          ? `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',`
+          : '';
+    return `import { CavosProvider } from '@cavos/kit/react';
 
 <CavosProvider
   config={{
     appId: 'YOUR_APP_ID',
-    chain: 'solana',
+    chain: '${chain}',
     network: 'testnet',
-    appSalt: 'my-app',
+    appSalt: 'my-app',${chainExtras}
   }}
   modal={{
     appName: '${appName}',
@@ -52,9 +93,8 @@ export function Demo() {
   }}
 >
   <App />
-</CavosProvider>`,
-    [appName, theme, accent, background, backgroundColor, radius, providers],
-  );
+</CavosProvider>`;
+  }, [chain, appName, theme, accent, background, backgroundColor, customBg, radius, providers]);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -64,10 +104,6 @@ export function Demo() {
           <div className="flex items-center gap-2.5">
             <span className="text-ink">
               <CavosMark size={22} />
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight text-ink">cavos</span>
-            <span className="rounded-full border border-line-strong px-2 py-0.5 text-[11px] font-medium text-muted">
-              Demo
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -86,11 +122,15 @@ export function Demo() {
       </header>
 
       {/* ── Body ── */}
-      <main className="mx-auto grid max-w-[1180px] grid-cols-1 gap-6 px-5 py-10 md:px-8 lg:grid-cols-[280px_1fr_284px]">
+      <main className="mx-auto grid max-w-[1180px] grid-cols-1 gap-6 px-5 py-10 pb-32 md:px-8 md:pb-10 lg:grid-cols-[340px_1fr_284px]">
         {/* Left — Customize */}
         <CustomizePanel
+          chain={chain}
+          setChain={setChain}
           background={background}
           setBackground={setBackground}
+          customBg={customBg}
+          setCustomBg={setCustomBg}
           accent={accent}
           setAccent={setAccent}
           appName={appName}
@@ -104,10 +144,25 @@ export function Demo() {
         />
 
         {/* Center — live preview / dev tools */}
-        <section className="flex items-start justify-center pt-6 md:pt-12">
+        <section className="flex items-start justify-center">
           <div className="w-full max-w-[400px]">
             {isReady ? (
-              <DevTools configCode={configCode} />
+              <DevTools configCode={configCode} chain={chain} />
+            ) : isMobile ? (
+              <CavosAuthModal
+                open={authOpen}
+                onClose={() => setAuthOpen(false)}
+                appName={appName || undefined}
+                appLogo={appLogo || undefined}
+                appLogoSize={56}
+                providers={providers}
+                emailMode="otp"
+                primaryColor={accent}
+                theme={theme}
+                backgroundColor={backgroundColor}
+                radius={radius}
+                secureStep="off"
+              />
             ) : (
               <CavosAuthModal
                 inline
@@ -115,6 +170,7 @@ export function Demo() {
                 onClose={() => {}}
                 appName={appName || undefined}
                 appLogo={appLogo || undefined}
+                appLogoSize={56}
                 providers={providers}
                 emailMode="otp"
                 primaryColor={accent}
@@ -130,8 +186,8 @@ export function Demo() {
         {/* Right — rail */}
         <aside className="space-y-4">
           <div className="rounded-2xl border border-line bg-white p-5 shadow-[0_1px_3px_rgba(10,10,15,0.04)]">
-            <div className="flex items-center gap-2 text-ink">
-              <Sparkles size={16} className="text-ink" />
+            <div className="flex items-center gap-2.5">
+              <CvSpark size={30} />
               <h3 className="text-[15px] font-semibold text-ink">Explore Cavos</h3>
             </div>
             <p className="mt-2.5 text-[13px] leading-relaxed text-muted">
@@ -150,8 +206,8 @@ export function Demo() {
           </div>
 
           <div className="rounded-2xl border border-line bg-white p-5 shadow-[0_1px_3px_rgba(10,10,15,0.04)]">
-            <div className="flex items-center gap-2">
-              <Code2 size={16} className="text-ink" />
+            <div className="flex items-center gap-2.5">
+              <CvCode size={30} />
               <h3 className="text-[15px] font-semibold text-ink">Export this configuration</h3>
             </div>
             <p className="mt-2.5 text-[13px] leading-relaxed text-muted">
@@ -160,12 +216,25 @@ export function Demo() {
             <CopyConfigButton code={configCode} />
           </div>
 
-          <div className="flex items-center justify-center gap-2 rounded-2xl border border-line bg-white px-5 py-3 text-[12px] text-muted">
-            <Lock size={13} />
+          <div className="flex items-center gap-2.5 rounded-2xl border border-line bg-white px-5 py-3.5 text-[12.5px] text-muted">
+            <CvShield size={26} />
             Non-custodial · keys never leave the device
           </div>
         </aside>
       </main>
+
+      {/* ── Mobile sticky launch CTA (hidden once authenticated / on desktop) ── */}
+      {isMobile && !isReady && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/90 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:hidden">
+          <button
+            onClick={() => setAuthOpen(true)}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_8px_24px_rgba(64,42,255,0.28)] transition-all hover:bg-brand-hover active:scale-[0.99]"
+          >
+            <Wallet size={17} />
+            Launch Cavos
+          </button>
+        </div>
+      )}
     </div>
   );
 }

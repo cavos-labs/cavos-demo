@@ -1,6 +1,7 @@
 'use client';
 
-import { Sliders, Lock, Wallet } from 'lucide-react';
+import { useState } from 'react';
+import { Sliders, Lock, Wallet, Link2, ChevronDown, Check } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import {
   FaApple,
@@ -15,8 +16,10 @@ import {
   FaCommentSms,
 } from 'react-icons/fa6';
 import { SiFarcaster } from 'react-icons/si';
+import { CHAIN_LIST, CHAINS, type Chain } from '@/lib/chains';
+import { ChainLogo } from './ChainLogo';
 
-export type Background = 'white' | 'dark' | 'soft';
+export type Background = 'white' | 'dark' | 'soft' | 'custom';
 export type ProviderKey = 'email' | 'google' | 'apple';
 
 const ACCENTS = ['#402AFF', '#7C3AED', '#12B3A6', '#17B85A', '#FA5D3C'];
@@ -41,8 +44,12 @@ const COMING_SOON: { label: string; icon: React.ReactNode }[] = [
 ];
 
 interface Props {
+  chain: Chain;
+  setChain: (c: Chain) => void;
   background: Background;
   setBackground: (b: Background) => void;
+  customBg: string;
+  setCustomBg: (c: string) => void;
   accent: string;
   setAccent: (c: string) => void;
   appName: string;
@@ -87,6 +94,55 @@ function SectionLabel({ icon, children }: { icon: React.ReactNode; children: Rea
   );
 }
 
+function ChainSelect({ chain, setChain }: { chain: Chain; setChain: (c: Chain) => void }) {
+  const [open, setOpen] = useState(false);
+  const current = CHAINS[chain];
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-2.5 rounded-lg border border-line-strong bg-white px-3 py-2.5 text-left transition-colors hover:border-ink/40"
+      >
+        <ChainLogo chain={chain} size={18} />
+        <span className="flex-1 text-[13px] font-medium text-ink">{current.label}</span>
+        <span className="text-[11px] text-muted">{current.symbol}</span>
+        <ChevronDown
+          size={15}
+          className={`text-muted transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open && (
+        <>
+          {/* click-away catcher */}
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-line-strong bg-white py-1 shadow-[0_8px_24px_rgba(10,10,15,0.12)]">
+            {CHAIN_LIST.map((c) => {
+              const active = c.key === chain;
+              return (
+                <button
+                  key={c.key}
+                  onClick={() => {
+                    setChain(c.key);
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-surface"
+                >
+                  <ChainLogo chain={c.key} size={18} />
+                  <span className="flex-1 text-[13px] font-medium text-ink">{c.label}</span>
+                  <span className="text-[11px] text-muted">{c.symbol}</span>
+                  {active && <Check size={14} className="text-brand" />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function CustomizePanel(p: Props) {
   const toggleProvider = (key: ProviderKey) => {
     p.setProviders(
@@ -100,6 +156,18 @@ export function CustomizePanel(p: Props) {
     <aside className="space-y-6 rounded-2xl border border-line bg-white p-5">
       <SectionLabel icon={<Sliders size={15} className="text-ink" />}>Customize</SectionLabel>
 
+      {/* Chain */}
+      <div>
+        <div className="mb-2.5 flex items-center gap-1.5">
+          <Link2 size={12} className="text-muted" />
+          <p className="text-[12px] font-medium text-muted">Chain</p>
+        </div>
+        <ChainSelect chain={p.chain} setChain={p.setChain} />
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">
+          Switching chain signs you out — each chain uses a separate wallet.
+        </p>
+      </div>
+
       {/* Background */}
       <div>
         <p className="mb-2.5 text-[12px] font-medium text-muted">Background</p>
@@ -107,6 +175,28 @@ export function CustomizePanel(p: Props) {
           <Swatch label="White" active={p.background === 'white'} onClick={() => p.setBackground('white')} style={{ background: '#ffffff', border: '1px solid #E0E0E6' }} />
           <Swatch label="Dark" active={p.background === 'dark'} onClick={() => p.setBackground('dark')} style={{ background: '#0A0A0F' }} />
           <Swatch label="Soft" active={p.background === 'soft'} onClick={() => p.setBackground('soft')} style={{ background: '#EEEDF2' }} />
+          {/* Custom background color picker */}
+          <label
+            aria-label="Custom background color"
+            className={`relative h-7 w-7 cursor-pointer overflow-hidden rounded-full transition-all ${
+              p.background === 'custom' ? 'ring-2 ring-ink ring-offset-2' : 'ring-1 ring-line-strong hover:ring-ink/40'
+            }`}
+            style={{
+              background: p.background === 'custom'
+                ? p.customBg
+                : 'conic-gradient(from 0deg, #ff4d4d, #ffd24d, #4dff88, #4dd2ff, #4d4dff, #d24dff, #ff4d4d)',
+            }}
+          >
+            <input
+              type="color"
+              value={p.customBg}
+              onChange={(e) => {
+                p.setCustomBg(e.target.value);
+                p.setBackground('custom');
+              }}
+              className="absolute -inset-2 cursor-pointer opacity-0"
+            />
+          </label>
         </div>
       </div>
 
