@@ -94,27 +94,48 @@ export function CustomizePanel(p: Props) {
     );
   };
 
+  const isCustomAccent = !ACCENTS.some((c) => c.toLowerCase() === p.accent.toLowerCase());
+
   return (
     <aside className="space-y-6 rounded-2xl border border-line bg-white p-5">
       <SectionLabel icon={<Sliders size={15} className="text-ink" />}>Customize</SectionLabel>
 
-      {/* Background + Accent */}
-      <div className="flex items-start gap-8">
-        <div>
-          <p className="mb-2.5 text-[12px] font-medium text-muted">Background</p>
-          <div className="flex gap-2">
-            <Swatch label="White" active={p.background === 'white'} onClick={() => p.setBackground('white')} style={{ background: '#ffffff', border: '1px solid #E0E0E6' }} />
-            <Swatch label="Dark" active={p.background === 'dark'} onClick={() => p.setBackground('dark')} style={{ background: '#0A0A0F' }} />
-            <Swatch label="Soft" active={p.background === 'soft'} onClick={() => p.setBackground('soft')} style={{ background: '#EEEDF2' }} />
-          </div>
+      {/* Background */}
+      <div>
+        <p className="mb-2.5 text-[12px] font-medium text-muted">Background</p>
+        <div className="flex gap-2.5">
+          <Swatch label="White" active={p.background === 'white'} onClick={() => p.setBackground('white')} style={{ background: '#ffffff', border: '1px solid #E0E0E6' }} />
+          <Swatch label="Dark" active={p.background === 'dark'} onClick={() => p.setBackground('dark')} style={{ background: '#0A0A0F' }} />
+          <Swatch label="Soft" active={p.background === 'soft'} onClick={() => p.setBackground('soft')} style={{ background: '#EEEDF2' }} />
         </div>
-        <div>
-          <p className="mb-2.5 text-[12px] font-medium text-muted">Accent</p>
-          <div className="flex gap-2">
-            {ACCENTS.map((c) => (
-              <Swatch key={c} label={`Accent ${c}`} active={p.accent === c} onClick={() => p.setAccent(c)} style={{ background: c }} />
-            ))}
-          </div>
+      </div>
+
+      {/* Accent */}
+      <div>
+        <p className="mb-2.5 text-[12px] font-medium text-muted">Accent</p>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {ACCENTS.map((c) => (
+            <Swatch key={c} label={`Accent ${c}`} active={p.accent.toLowerCase() === c.toLowerCase()} onClick={() => p.setAccent(c)} style={{ background: c }} />
+          ))}
+          {/* Custom color picker */}
+          <label
+            aria-label="Custom accent color"
+            className={`relative h-7 w-7 cursor-pointer overflow-hidden rounded-full transition-all ${
+              isCustomAccent ? 'ring-2 ring-ink ring-offset-2' : 'ring-1 ring-line-strong hover:ring-ink/40'
+            }`}
+            style={{
+              background: isCustomAccent
+                ? p.accent
+                : 'conic-gradient(from 0deg, #ff4d4d, #ffd24d, #4dff88, #4dd2ff, #4d4dff, #d24dff, #ff4d4d)',
+            }}
+          >
+            <input
+              type="color"
+              value={p.accent}
+              onChange={(e) => p.setAccent(e.target.value)}
+              className="absolute -inset-2 cursor-pointer opacity-0"
+            />
+          </label>
         </div>
       </div>
 

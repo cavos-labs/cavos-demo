@@ -13,33 +13,21 @@ const BG_MAP: Record<Background, { theme: 'light' | 'dark'; backgroundColor: str
   soft: { theme: 'light', backgroundColor: '#F4F4F7' },
 };
 
-const DEFAULT_LOGO = 'https://cavos.xyz/_next/image?url=%2Fcavos-black.png&w=256&q=75';
-
-// White version of the Cavos star (same vector) for the dark background, so the
-// default logo stays visible instead of a black mark on a black card.
-const STAR_PATH =
-  'M148 630 l-148 -185 68 -3 c193 -9 236 39 230 264 l-3 108 -147 -184z M360 705 c1 -225 37 -269 217 -263 l83 3 -136 170 c-74 94 -142 177 -150 185 -12 12 -14 0 -14 -95z M125 223 c69 -87 136 -171 150 -188 l26 -30 -4 135 c-6 212 -29 240 -201 240 l-96 0 125 -157z M433 364 c-53 -26 -67 -70 -71 -224 -3 -118 -2 -133 11 -120 8 8 76 93 151 188 l136 172 -97 0 c-68 0 -108 -5 -130 -16z';
-const DEFAULT_LOGO_DARK = `data:image/svg+xml,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 66 82" fill="#ffffff"><g transform="translate(0,82) scale(0.1,-0.1)"><path d="${STAR_PATH}"/></g></svg>`,
-)}`;
-
 export function Demo() {
   const { walletStatus } = useCavos();
 
   // ── Customize state ──
+  // appName / appLogo start empty: the kit falls back to the Cavos star + a
+  // "Sign in or sign up" heading, so the default state is Cavos-branded.
   const [background, setBackground] = useState<Background>('white');
   const [accent, setAccent] = useState('#402AFF');
-  const [appName, setAppName] = useState('Acme');
-  const [appLogo, setAppLogo] = useState(DEFAULT_LOGO);
+  const [appName, setAppName] = useState('');
+  const [appLogo, setAppLogo] = useState('');
   const [radius, setRadius] = useState(16);
   const [providers, setProviders] = useState<ProviderKey[]>(['email', 'google', 'apple']);
 
   const { theme, backgroundColor } = BG_MAP[background];
   const isReady = walletStatus.isReady;
-
-  // Keep the default Cavos mark visible on the dark card.
-  const effectiveLogo =
-    appLogo === DEFAULT_LOGO && theme === 'dark' ? DEFAULT_LOGO_DARK : appLogo;
 
   const configCode = useMemo(
     () =>
@@ -125,8 +113,8 @@ export function Demo() {
                 inline
                 open
                 onClose={() => {}}
-                appName={appName}
-                appLogo={effectiveLogo || undefined}
+                appName={appName || undefined}
+                appLogo={appLogo || undefined}
                 providers={providers}
                 emailMode="otp"
                 primaryColor={accent}
