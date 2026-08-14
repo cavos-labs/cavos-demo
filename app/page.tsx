@@ -11,7 +11,18 @@ const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api
 const STARKNET_PAYMASTER = process.env.NEXT_PUBLIC_STARKNET_PAYMASTER_API_KEY ?? '';
 
 function buildConfig(chain: Chain): CavosConfig {
-  const base = { appId: APP_ID, chain, network: 'testnet' as const, appSalt: 'cavos-demo-v1' };
+  // `appSalt` bumped to v2 with the 2026-08-01 sepolia class hash — the salt is
+  // part of the address derivation, so a new salt gives every user a fresh
+  // account on the current class instead of an address on the retired one.
+  // `socialRecovery: true` pins the enclave measurements shipped in the kit; the
+  // feature must also be enabled for this app in the Cavos dashboard.
+  const base = {
+    appId: APP_ID,
+    chain,
+    network: 'testnet' as const,
+    appSalt: 'cavos-demo-v2',
+    socialRecovery: true,
+  };
   switch (chain) {
     case 'solana':
       return { ...base, rpcUrl: SOLANA_RPC };

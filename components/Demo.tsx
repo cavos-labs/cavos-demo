@@ -79,7 +79,8 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
     appId: 'YOUR_APP_ID',
     chain: '${chain}',
     network: 'testnet',
-    appSalt: 'my-app',${chainExtras}
+    appSalt: 'my-app',
+    socialRecovery: true,${chainExtras}
   }}
   modal={{
     appName: '${appName}',
