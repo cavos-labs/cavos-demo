@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { CavosProvider } from '@cavos/kit/react';
 import type { CavosConfig } from '@cavos/kit/react';
 import { Demo } from '@/components/Demo';
+import { CHAINS } from '@/lib/chains';
 import type { Chain } from '@/lib/chains';
 
 const APP_ID = process.env.NEXT_PUBLIC_CAVOS_APP_ID ?? '';
@@ -34,19 +35,28 @@ function buildConfig(chain: Chain): CavosConfig {
 }
 
 export default function Page() {
-  const [chain, setChain] = useState<Chain>('solana');
+  // `null` until the saved chain is read. localStorage isn't available during
+  // SSR, so it can't seed useState without a hydration mismatch — but mounting
+  // the provider on a default chain and switching a tick later would remount it
+  // through `key`, and that loses an OAuth callback: the first provider strips
+  // the one-time code from the URL before the second one can read it, dropping
+  // the user back on the sign-in screen. So mount the provider once, after the
+  // chain is known.
+  const [chain, setChain] = useState<Chain | null>(null);
 
   // Restore the last-selected chain so a reload keeps context.
   useEffect(() => {
     const saved = localStorage.getItem('cavos-demo-chain') as Chain | null;
-    if (saved && saved !== chain) setChain(saved);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setChain(saved && saved in CHAINS ? saved : 'solana');
   }, []);
 
   const handleSetChain = (c: Chain) => {
     setChain(c);
     localStorage.setItem('cavos-demo-chain', c);
   };
+
+  // One paint on the demo's own background while the chain resolves.
+  if (!chain) return <div className="min-h-screen bg-surface" />;
 
   const config = buildConfig(chain);
 
