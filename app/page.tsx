@@ -12,16 +12,18 @@ const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api
 const STARKNET_PAYMASTER = process.env.NEXT_PUBLIC_STARKNET_PAYMASTER_API_KEY ?? '';
 
 function buildConfig(chain: Chain): CavosConfig {
-  // `appSalt` bumped to v2 with the 2026-08-01 sepolia class hash — the salt is
-  // part of the address derivation, so a new salt gives every user a fresh
-  // account on the current class instead of an address on the retired one.
+  // The salt is part of the address derivation, so bumping it gives every user
+  // a fresh account. v2 came with the 2026-08-01 sepolia class hash, to move off
+  // the retired one; v3 is for social recovery, which enrols once per wallet and
+  // answers 409 for a wallet that already has a record — accounts derived under
+  // v2 would never exercise enrolment again.
   // `socialRecovery: true` pins the enclave measurements shipped in the kit; the
   // feature must also be enabled for this app in the Cavos dashboard.
   const base = {
     appId: APP_ID,
     chain,
     network: 'testnet' as const,
-    appSalt: 'cavos-demo-v2',
+    appSalt: 'cavos-demo-v3',
     socialRecovery: true,
   };
   switch (chain) {
