@@ -12,18 +12,21 @@ const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api
 const STARKNET_PAYMASTER = process.env.NEXT_PUBLIC_STARKNET_PAYMASTER_API_KEY ?? '';
 
 function buildConfig(chain: Chain): CavosConfig {
-  // The salt is part of the address derivation, so bumping it gives every user
-  // a fresh account. v2 came with the 2026-08-01 sepolia class hash, to move off
-  // the retired one; v3 is for social recovery, which enrols once per wallet and
-  // answers 409 for a wallet that already has a record — accounts derived under
-  // v2 would never exercise enrolment again.
+  // The salt is part of the address derivation, so bumping it gives every user a
+  // fresh account. v2 came with the 2026-08-01 sepolia class hash, to move off
+  // the retired one. Every bump since has been for social recovery, which enrols
+  // once per wallet and answers 409 for a wallet that already holds a record —
+  // so a wallet whose enrolment failed can never retry, and testing a fix needs
+  // an address that has never tried. v3 was the first such attempt, against a
+  // control plane that still forced one provider per environment; v4 is the
+  // first against one that takes the provider from the credential.
   // `socialRecovery: true` pins the enclave measurements shipped in the kit; the
   // feature must also be enabled for this app in the Cavos dashboard.
   const base = {
     appId: APP_ID,
     chain,
     network: 'testnet' as const,
-    appSalt: 'cavos-demo-v3',
+    appSalt: 'cavos-demo-v4',
     socialRecovery: true,
   };
   switch (chain) {
