@@ -26,7 +26,7 @@ function buildConfig(chain: Chain): CavosConfig {
     appId: APP_ID,
     chain,
     network: 'testnet' as const,
-    appSalt: 'cavos-demo-v5',
+    appSalt: 'cavos-demo-v6',
     socialRecovery: true,
   };
   switch (chain) {
