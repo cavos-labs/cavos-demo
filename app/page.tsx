@@ -17,16 +17,16 @@ function buildConfig(chain: Chain): CavosConfig {
   // the retired one. Every bump since has been for social recovery, which enrols
   // once per wallet and answers 409 for a wallet that already holds a record —
   // so a wallet whose enrolment failed can never retry, and testing a fix needs
-  // an address that has never tried. v3 was the first such attempt, against a
-  // control plane that still forced one provider per environment; v4 is the
-  // first against one that takes the provider from the credential.
+  // an address that has never tried. v3 ran against a control plane that still forced one provider per
+  // environment; v4 against one that takes the provider from the credential but
+  // an enclave that could not reach Apple's JWKS; v5 is for the enclave that can.
   // `socialRecovery: true` pins the enclave measurements shipped in the kit; the
   // feature must also be enabled for this app in the Cavos dashboard.
   const base = {
     appId: APP_ID,
     chain,
     network: 'testnet' as const,
-    appSalt: 'cavos-demo-v4',
+    appSalt: 'cavos-demo-v5',
     socialRecovery: true,
   };
   switch (chain) {
