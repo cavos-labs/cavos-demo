@@ -20,13 +20,15 @@ function buildConfig(chain: Chain): CavosConfig {
   // an address that has never tried. v3 ran against a control plane that still forced one provider per
   // environment; v4 against one that takes the provider from the credential but
   // an enclave that could not reach Apple's JWKS; v5 is for the enclave that can.
+  // v6 predates the 0.1.8 kit; v7 is the first address to meet 0.1.6's split of
+  // `not_enrolled` from `enrollment_pending` and 0.1.7's next enclave measurement.
   // `socialRecovery: true` pins the enclave measurements shipped in the kit; the
   // feature must also be enabled for this app in the Cavos dashboard.
   const base = {
     appId: APP_ID,
     chain,
     network: 'testnet' as const,
-    appSalt: 'cavos-demo-v6',
+    appSalt: 'cavos-demo-v7',
     socialRecovery: true,
   };
   switch (chain) {
