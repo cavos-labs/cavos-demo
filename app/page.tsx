@@ -17,10 +17,9 @@ const config: CavosConfig = {
   chains: ['starknet', 'solana', 'stellar'],
   network: 'testnet',
   appSalt: 'cavos-demo-kit22',
-  // Off while the recovery enclave host is down: the control plane's `enabled`
-  // flag is the environment setting, not enclave health, so with this on the UI
-  // offers a flow that cannot complete.
-  socialRecovery: false,
+  // The enclave attests 3a97720a…, matching the KMS key policy and the
+  // measurements the kit pins, so the flow can actually complete now.
+  socialRecovery: true,
   // Per chain, not one for all: a single `rpcUrl` reaches every chain, so the
   // Solana node ends up answering Starknet's calls with "Method not found".
   rpcUrls: { solana: SOLANA_RPC },
