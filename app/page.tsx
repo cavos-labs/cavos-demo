@@ -6,7 +6,12 @@ import type { CavosConfig } from '@cavos/kit/react';
 import { Demo } from '@/components/Demo';
 import type { Chain } from '@/lib/chains';
 import type { DeviceApproval } from '@/lib/deviceApproval';
-import { loadDeviceApproval, storeDeviceApproval } from '@/lib/deviceApproval';
+import {
+  loadDeviceApproval,
+  loadPasskeyChain,
+  storeDeviceApproval,
+  storePasskeyChain,
+} from '@/lib/deviceApproval';
 
 const APP_ID = process.env.NEXT_PUBLIC_CAVOS_APP_ID ?? '';
 const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com';
@@ -22,13 +27,28 @@ export default function Page() {
   // has no localStorage, so seeding from it renders one thing on the server and
   // another on the client, and React discards the tree.
   const [deviceApproval, setDeviceApproval] = useState<DeviceApproval>('enclave');
-  useEffect(() => setDeviceApproval(loadDeviceApproval()), []);
 
   // Which chain a passkey app runs on. The kit refuses passkey approval for a
   // multichain app, because a passkey is registered per chain and the others
   // would have no way to authorize a new device at all — so here the choice
   // becomes the whole session rather than a view of it.
   const [passkeyChain, setPasskeyChain] = useState<Chain>('starknet');
+
+  // Both are read after mount, because the server has no localStorage and
+  // seeding state from it renders one thing there and another here. Nothing is
+  // rendered until they are: the provider is keyed on this choice, so mounting
+  // with the default and correcting it a tick later would rebuild the session
+  // in the middle of the OAuth callback it was busy consuming.
+  const [settingsRead, setSettingsRead] = useState(false);
+  useEffect(() => {
+    setDeviceApproval(loadDeviceApproval());
+    setPasskeyChain(loadPasskeyChain());
+    setSettingsRead(true);
+  }, []);
+  const choosePasskeyChain = (next: Chain) => {
+    storePasskeyChain(next as ReturnType<typeof loadPasskeyChain>);
+    setPasskeyChain(next);
+  };
 
   const config = useMemo<CavosConfig>(
     () => ({
@@ -63,13 +83,15 @@ export default function Page() {
   // a multichain session still remounts nothing.
   const sessionKey = deviceApproval === 'passkey' ? `passkey:${passkeyChain}` : 'enclave';
 
+  if (!settingsRead) return null;
+
   return (
     <CavosProvider key={sessionKey} config={config}>
       <Demo
         deviceApproval={deviceApproval}
         setDeviceApproval={chooseDeviceApproval}
         passkeyChain={passkeyChain}
-        setPasskeyChain={setPasskeyChain}
+        setPasskeyChain={choosePasskeyChain}
       />
     </CavosProvider>
   );
