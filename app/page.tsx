@@ -15,7 +15,7 @@ const DEMO_CHAINS: Chain[] = ['solana', 'stellar', 'starknet'];
 function buildConfig(defaultChain: Chain): CavosConfig {
   // The salt names this app's device-key slot. Bumping it gives QA a fresh set
   // of accounts without colliding with production (v7) or the previous local
-  // lazy-deploy pass (v9-lazy). v10 is the kit#22 multi-chain session.
+  // lazy-deploy pass (v9-lazy). v11 is a post-fix retry after the Stellar unlock backend error (v10 lookup still hit old registry rows).
   // `socialRecovery: true` pins the enclave measurements shipped in the kit; the
   // feature must also be enabled for this app in the Cavos dashboard.
   //
@@ -27,7 +27,7 @@ function buildConfig(defaultChain: Chain): CavosConfig {
     chains: DEMO_CHAINS,
     defaultChain,
     network: 'testnet',
-    appSalt: 'cavos-demo-v10-kit22',
+    appSalt: 'cavos-demo-v11-kit22',
     socialRecovery: true,
     paymasterApiKey: STARKNET_PAYMASTER,
   };
