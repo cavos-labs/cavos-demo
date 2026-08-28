@@ -81,7 +81,10 @@ export function Demo() {
   // address, this device owns it, and it can sign. Gating the panel on
   // `isReady` alone left the demo on the sign-in preview after a successful
   // sign-up, because the account only turns ready on its first execute.
-  const isReady = walletStatus.isReady || walletStatus.isUndeployed;
+  // Being signed in is enough to show the wallet. Reads — address, balance,
+  // history — never need this device to be a signer, and authorization is
+  // resolved when an action actually needs it rather than at the door.
+  const isReady = isAuthenticated && !!address;
 
   const configCode = useMemo(() => {
     // Configuring every chain means every chain's requirement applies: Starknet
