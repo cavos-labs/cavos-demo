@@ -64,15 +64,30 @@ export function Demo({
   // snippet and the modal preview — so it is held here and handed to the session
   // only once one exists. `setChain` rightly refuses to switch a session that
   // has not connected yet.
-  const { walletStatus, chain: sessionChain, setChain: setSessionChain, isAuthenticated, address } =
+  const { walletStatus, chain: sessionChain, setChain: setSessionChain, isAuthenticated, address, logout } =
     useCavos();
+
+  // Changing the approval method changes the shape of the session — passkeys
+  // hold one chain, the enclave holds all of them — so the session that exists
+  // cannot simply carry over. Signing out makes that visible instead of
+  // silently reconnecting into a session built on different rules.
+  const switchApproval = (next: DeviceApproval) => {
+    if (next === deviceApproval) return;
+    logout();
+    setDeviceApproval(next);
+  };
+  const switchPasskeyChain = (next: Chain) => {
+    if (next === passkeyChain) return;
+    logout();
+    setPasskeyChain(next);
+  };
   const [previewChain, setPreviewChain] = useState<Chain>('starknet');
   // On passkeys the session holds exactly one chain, so picking a chain picks
   // the session -- there is no switching within it.
   const chain = deviceApproval === 'passkey' ? passkeyChain : isAuthenticated ? sessionChain : previewChain;
   const setChain = (next: Chain) => {
     if (deviceApproval === 'passkey') {
-      setPasskeyChain(next);
+      switchPasskeyChain(next);
       return;
     }
     setPreviewChain(next);
@@ -195,7 +210,7 @@ export function Demo({
           providers={providers}
           setProviders={setProviders}
           deviceApproval={deviceApproval}
-          setDeviceApproval={setDeviceApproval}
+          setDeviceApproval={switchApproval}
         />
 
         {/* Center — live preview / dev tools */}
