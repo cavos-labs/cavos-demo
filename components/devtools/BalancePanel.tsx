@@ -11,6 +11,13 @@ import { CvWallet } from '../CavosIcons';
 // `chain` discriminant at runtime and cast to these minimal shapes.
 type SolanaWallet = { chain: 'solana'; connection: { getBalance: (a: string) => Promise<number>; requestAirdrop: (a: string, l: number) => Promise<string> } };
 type StellarWallet = { chain: 'stellar'; balance: () => Promise<bigint> };
+/** Starknet's balance is an ERC-20 read, done through the wallet's provider. */
+type StarknetWallet = {
+  chain: 'starknet';
+  account: {
+    callContract: (call: { contractAddress: string; entrypoint: string; calldata: string[] }) => Promise<string[]>;
+  };
+};
 
 function asSolana(w: unknown): SolanaWallet {
   return w as SolanaWallet;
@@ -18,14 +25,21 @@ function asSolana(w: unknown): SolanaWallet {
 function asStellar(w: unknown): StellarWallet {
   return w as StellarWallet;
 }
+function asStarknet(w: unknown): StarknetWallet {
+  return w as StarknetWallet;
+}
 
 interface Props {
   chain: Chain;
 }
 
 /**
- * Native balance + devnet faucet for Solana (airdrop) and Stellar (friendbot).
- * Starknet has no simple native balance read in the kit, so it shows a notice.
+ * Native balance + testnet faucet.
+ *
+ * Solana and Stellar have a true native asset and a programmatic faucet
+ * (airdrop / friendbot). Starknet's fee token is an ERC-20, so its balance is a
+ * `balanceOf` call and its faucet is a captcha-gated web page — a link, not a
+ * button.
  */
 export function BalancePanel({ chain }: Props) {
   const { wallet, address } = useCavos();
@@ -39,7 +53,6 @@ export function BalancePanel({ chain }: Props) {
 
   const refresh = useCallback(async () => {
     if (!wallet || !address) return;
-    if (chain === 'starknet') return; // no native balance read
     setLoading(true);
     try {
       if (chain === 'solana') {
@@ -48,19 +61,27 @@ export function BalancePanel({ chain }: Props) {
       } else if (chain === 'stellar') {
         const stroops = await asStellar(wallet).balance();
         setBalance(stroops);
+      } else if (chain === 'starknet' && meta.feeToken) {
+        // balanceOf returns a u256 as [low, high].
+        const [low, high] = await asStarknet(wallet).account.callContract({
+          contractAddress: meta.feeToken,
+          entrypoint: 'balanceOf',
+          calldata: [address],
+        });
+        setBalance((BigInt(high ?? 0) << 128n) + BigInt(low ?? 0));
       }
     } catch (e) {
       setBalance(null);
     } finally {
       setLoading(false);
     }
-  }, [wallet, address, chain]);
+  }, [wallet, address, chain, meta.feeToken]);
 
   useEffect(() => {
     setBalance(null);
     setTxHash(null);
     setFaucetState('idle');
-    if (chain !== 'starknet') refresh();
+    refresh();
   }, [chain, refresh]);
 
   const runFaucet = async () => {
@@ -90,16 +111,6 @@ export function BalancePanel({ chain }: Props) {
     }
   };
 
-  if (chain === 'starknet') {
-    return (
-      <Section title="Balance">
-        <p className="text-[12.5px] leading-relaxed text-muted">
-          Balance tracking for Starknet is coming soon. Your wallet is deployed and ready.
-        </p>
-      </Section>
-    );
-  }
-
   return (
     <Section title="Balance">
       <div className="flex items-end justify-between">
@@ -122,6 +133,21 @@ export function BalancePanel({ chain }: Props) {
           <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
+
+      {/* No programmatic faucet: Starknet's is a captcha-gated page, so the
+          honest affordance is a link out, not a button that cannot work. */}
+      {meta.faucet === 'none' && meta.faucetUrl && (
+        <a
+          href={meta.faucetUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-white px-3 py-1.5 text-[12.5px] font-semibold text-ink transition-colors hover:border-ink/40"
+        >
+          <ArrowDownToLine size={13} />
+          Get {meta.symbol} from the faucet
+          <ExternalLink size={12} className="text-muted" />
+        </a>
+      )}
 
       {meta.faucet !== 'none' && (
         <div className="mt-3">
