@@ -8,6 +8,7 @@ import { CvSpark, CvCode, CvShield } from './CavosIcons';
 import { CustomizePanel, type Background, type ProviderKey } from './CustomizePanel';
 import { DevTools } from './DevTools';
 import type { Chain } from '@/lib/chains';
+import type { DeviceApproval } from '@/lib/deviceApproval';
 
 // Mirrors the kit's internal mobile breakpoint (max-width: 640px) so the
 // launch-button UX switches at exactly the same width the modal becomes a
@@ -43,8 +44,55 @@ function themeForHex(hex: string): 'light' | 'dark' {
   return L > 0.45 ? 'light' : 'dark';
 }
 
-export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) => void }) {
-  const { walletStatus } = useCavos();
+export function Demo({
+  deviceApproval,
+  setDeviceApproval,
+  passkeyChain,
+  setPasskeyChain,
+}: {
+  deviceApproval: DeviceApproval;
+  setDeviceApproval: (v: DeviceApproval) => void;
+  passkeyChain: Chain;
+  setPasskeyChain: (c: Chain) => void;
+}) {
+  // Chain comes from the session, not from a remount: one login holds a wallet
+  // on every configured chain and `setChain` just picks the active one. On
+  // passkeys the session holds a single chain, so there the choice is the
+  // session itself and the provider is keyed on it.
+  //
+  // Before there is a session it is still a live setting — it drives the config
+  // snippet and the modal preview — so it is held here and handed to the session
+  // only once one exists. `setChain` rightly refuses to switch a session that
+  // has not connected yet.
+  const { walletStatus, chain: sessionChain, setChain: setSessionChain, isAuthenticated, address, logout } =
+    useCavos();
+
+  // Changing the approval method changes the shape of the session — passkeys
+  // hold one chain, the enclave holds all of them — so the session that exists
+  // cannot simply carry over. Signing out makes that visible instead of
+  // silently reconnecting into a session built on different rules.
+  const switchApproval = (next: DeviceApproval) => {
+    if (next === deviceApproval) return;
+    logout();
+    setDeviceApproval(next);
+  };
+  const switchPasskeyChain = (next: Chain) => {
+    if (next === passkeyChain) return;
+    logout();
+    setPasskeyChain(next);
+  };
+  const [previewChain, setPreviewChain] = useState<Chain>('starknet');
+  // On passkeys the session holds exactly one chain, so picking a chain picks
+  // the session -- there is no switching within it.
+  const chain = deviceApproval === 'passkey' ? passkeyChain : isAuthenticated ? sessionChain : previewChain;
+  const setChain = (next: Chain) => {
+    if (deviceApproval === 'passkey') {
+      switchPasskeyChain(next);
+      return;
+    }
+    setPreviewChain(next);
+    if (isAuthenticated) setSessionChain(next);
+  };
   const isMobile = useIsMobile();
   const [authOpen, setAuthOpen] = useState(false);
 
@@ -63,24 +111,32 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
     background === 'custom'
       ? { theme: themeForHex(customBg), backgroundColor: customBg }
       : BG_MAP[background];
-  const isReady = walletStatus.isReady;
+  // A lazily-deployed wallet is usable before it exists on-chain: it has an
+  // address, this device owns it, and it can sign. Gating the panel on
+  // `isReady` alone left the demo on the sign-in preview after a successful
+  // sign-up, because the account only turns ready on its first execute.
+  // Being signed in is enough to show the wallet. Reads — address, balance,
+  // history — never need this device to be a signer, and authorization is
+  // resolved when an action actually needs it rather than at the door.
+  const isReady = isAuthenticated && !!address;
 
   const configCode = useMemo(() => {
+    // Configuring every chain means every chain's requirement applies: Starknet
+    // needs the paymaster key, Solana a real RPC (the public devnet endpoint
+    // rejects browser traffic). Stellar needs neither.
     const chainExtras =
-      chain === 'solana'
-        ? `\n    rpcUrl: 'YOUR_SOLANA_RPC',`
-        : chain === 'starknet'
-          ? `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',`
-          : '';
+      `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',` +
+      `\n    rpcUrl: 'YOUR_SOLANA_RPC',`;
     return `import { CavosProvider } from '@cavos/kit/react';
 
 <CavosProvider
   config={{
     appId: 'YOUR_APP_ID',
-    chain: '${chain}',
+    chains: ${deviceApproval === 'passkey' ? `['${chain}']` : "['starknet', 'solana', 'stellar']"},
     network: 'testnet',
     appSalt: 'my-app',
-    socialRecovery: true,${chainExtras}
+    socialRecovery: ${deviceApproval === 'enclave'},
+    deviceApproval: '${deviceApproval}',${chainExtras}
   }}
   modal={{
     appName: '${appName}',
@@ -95,7 +151,18 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
 >
   <App />
 </CavosProvider>`;
-  }, [chain, appName, theme, accent, background, backgroundColor, customBg, radius, providers]);
+  }, [
+    chain,
+    appName,
+    theme,
+    accent,
+    background,
+    backgroundColor,
+    customBg,
+    radius,
+    providers,
+    deviceApproval,
+  ]);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -142,6 +209,8 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
           setRadius={setRadius}
           providers={providers}
           setProviders={setProviders}
+          deviceApproval={deviceApproval}
+          setDeviceApproval={switchApproval}
         />
 
         {/* Center — live preview / dev tools */}
@@ -150,8 +219,12 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
             {isReady ? (
               <DevTools configCode={configCode} chain={chain} />
             ) : isMobile ? (
+              // A device that needs approving is not a signed-out device: the
+              // session is intact, this browser just is not a signer yet. Left
+              // behind the launch button it reads as being logged out, so the
+              // modal — which has the approval flow — opens on its own.
               <CavosAuthModal
-                open={authOpen}
+                open={authOpen || walletStatus.needsDeviceApproval}
                 onClose={() => setAuthOpen(false)}
                 appName={appName || undefined}
                 appLogo={appLogo || undefined}

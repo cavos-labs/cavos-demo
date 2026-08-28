@@ -15,9 +15,16 @@ export interface ChainMeta {
   explorer: (value: string, kind: 'tx' | 'address') => string;
   /** Faucet strategy for testnet funding. */
   faucet: 'airdrop' | 'friendbot' | 'none';
-  /** Whether native send is supported in the demo (Starknet fee-token
-   *  calldata is not wired, so it's gated off). */
+  /** Whether native send is supported in the demo. */
   canSendNative: boolean;
+  /**
+   * Starknet has no native balance: the "native" token is an ERC-20 like any
+   * other, so both reading a balance and sending are contract calls against
+   * this address. Absent on chains with a true native asset.
+   */
+  feeToken?: string;
+  /** Where to get testnet funds when there is no programmatic faucet. */
+  faucetUrl?: string;
 }
 
 const solanaExplorer = (value: string, kind: 'tx' | 'address') =>
@@ -57,11 +64,15 @@ export const CHAINS: Record<Chain, ChainMeta> = {
   starknet: {
     key: 'starknet',
     label: 'Starknet',
-    symbol: 'ETH',
+    symbol: 'STRK',
     decimals: 18,
     explorer: starknetExplorer,
     faucet: 'none',
-    canSendNative: false,
+    canSendNative: true,
+    // STRK on Sepolia. Chosen over ETH because it is what the public faucet
+    // dispenses, so a tester can actually get some.
+    feeToken: '0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d',
+    faucetUrl: 'https://starknet-faucet.vercel.app',
   },
 };
 

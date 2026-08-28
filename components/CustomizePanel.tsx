@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sliders, Lock, Wallet, Link2, ChevronDown, Check } from 'lucide-react';
+import { Sliders, Lock, Wallet, Link2, ChevronDown, Check, ShieldCheck } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import {
   FaApple,
@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fa6';
 import { SiFarcaster } from 'react-icons/si';
 import { CHAIN_LIST, CHAINS, type Chain } from '@/lib/chains';
+import type { DeviceApproval } from '@/lib/deviceApproval';
 import { ChainLogo } from './ChainLogo';
 
 export type Background = 'white' | 'dark' | 'soft' | 'custom';
@@ -60,6 +61,8 @@ interface Props {
   setRadius: (n: number) => void;
   providers: ProviderKey[];
   setProviders: (p: ProviderKey[]) => void;
+  deviceApproval: DeviceApproval;
+  setDeviceApproval: (v: DeviceApproval) => void;
 }
 
 function Swatch({
@@ -164,7 +167,45 @@ export function CustomizePanel(p: Props) {
         </div>
         <ChainSelect chain={p.chain} setChain={p.setChain} />
         <p className="mt-2 text-[11px] leading-relaxed text-muted">
-          Switching chain signs you out — each chain uses a separate wallet.
+          {p.deviceApproval === 'passkey'
+            ? 'On passkeys the session holds this chain alone, so picking one picks the session \u2014 there is nothing to switch between.'
+            : 'One login, a wallet on every chain. Switching picks the active one \u2014 no sign-out, no second account.'}
+        </p>
+      </div>
+
+      {/* Enclave */}
+      <div>
+        <div className="mb-2.5 flex items-center gap-1.5">
+          <ShieldCheck size={12} className="text-muted" />
+          <p className="text-[12px] font-medium text-muted">Recovery</p>
+        </div>
+        <button
+          role="switch"
+          aria-checked={p.deviceApproval === 'enclave'}
+          onClick={() => p.setDeviceApproval(p.deviceApproval === 'enclave' ? 'passkey' : 'enclave')}
+          className="flex w-full items-center justify-between rounded-lg border border-line-strong bg-white px-3 py-2.5 text-left transition-colors hover:border-ink/40"
+        >
+          <span className="text-[13px] font-medium text-ink">Use the enclave</span>
+          <span
+            className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200 ${
+              p.deviceApproval === 'enclave' ? 'bg-brand' : 'bg-line-strong'
+            }`}
+          >
+            <span
+              className={`absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                p.deviceApproval === 'enclave' ? 'translate-x-[18px]' : 'translate-x-[2px]'
+              }`}
+            />
+          </span>
+        </button>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">
+          {p.deviceApproval === 'enclave'
+            ? 'Every account enrols a recovery authority at sign-in, and a new device is restored the first time it transacts \u2014 no gesture, across every chain in the session.'
+            : 'A new device is authorized at sign-in by the user\u2019s synced passkey, the only way in. One chain per app: a passkey is registered per chain.'}
+        </p>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
+          Either way the user can add a passkey from Security \u2014 it is a factor on the account,
+          not a mode.
         </p>
       </div>
 

@@ -48,3 +48,56 @@ body {
 }
 
 button:hover { cursor: pointer; }
+
+/* ── Response ─────────────────────────────────────────────
+   Feedback belongs on the press, not the release: a control that waits for
+   click to acknowledge reads as dead. 100ms is under the threshold where a
+   press starts to feel reported rather than felt. */
+button:not(:disabled):active,
+[role='button']:not([aria-disabled='true']):active {
+  transform: scale(0.97);
+  transition: transform 100ms ease-out;
+}
+
+/* Keyboard users get the same affordance the pointer does. */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Tracking is size-specific ────────────────────────────
+   The brand sets Geist at -1%, which is right for reading sizes and wrong at
+   both ends: letters read too far apart as they grow, and too tight when they
+   shrink. Same family, same intent — corrected per size, the way a tracking
+   table does it. */
+h1, .display { letter-spacing: -0.025em; line-height: 1.05; }
+h2 { letter-spacing: -0.02em; line-height: 1.15; }
+h3 { letter-spacing: -0.015em; line-height: 1.25; }
+.text-\[10px\], .text-\[11px\], .text-\[12px\] { letter-spacing: 0.01em; }
+/* Uppercase micro-labels need the most air; the caps have no x-height cues. */
+.uppercase.tracking-\[0\.14em\] { letter-spacing: 0.14em; }
+
+/* ── Accessibility signals ────────────────────────────────
+   Reduced motion is not "no feedback": the press still reports, it just stops
+   moving. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.08ms !important;
+    scroll-behavior: auto !important;
+  }
+  button:not(:disabled):active { transform: none; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .backdrop-blur, [class*='backdrop-blur'] {
+    backdrop-filter: none !important;
+    background: #FFFFFF !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root { --color-line: #8A8A94; --color-line-strong: #5A5A66; --color-muted: #3A3A44; }
+}

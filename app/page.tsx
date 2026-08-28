@@ -1,79 +1,102 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CavosProvider } from '@cavos/kit/react';
 import type { CavosConfig } from '@cavos/kit/react';
 import { Demo } from '@/components/Demo';
-import { CHAINS } from '@/lib/chains';
 import type { Chain } from '@/lib/chains';
+import type { DeviceApproval } from '@/lib/deviceApproval';
+import {
+  loadDeviceApproval,
+  loadPasskeyChain,
+  storeDeviceApproval,
+  storePasskeyChain,
+} from '@/lib/deviceApproval';
 
 const APP_ID = process.env.NEXT_PUBLIC_CAVOS_APP_ID ?? '';
 const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com';
 const STARKNET_PAYMASTER = process.env.NEXT_PUBLIC_STARKNET_PAYMASTER_API_KEY ?? '';
 
-function buildConfig(chain: Chain): CavosConfig {
-  // The salt is part of the address derivation, so bumping it gives every user a
-  // fresh account. v2 came with the 2026-08-01 sepolia class hash, to move off
-  // the retired one. Every bump since has been for social recovery, which enrols
-  // once per wallet and answers 409 for a wallet that already holds a record —
-  // so a wallet whose enrolment failed can never retry, and testing a fix needs
-  // an address that has never tried. v3 ran against a control plane that still forced one provider per
-  // environment; v4 against one that takes the provider from the credential but
-  // an enclave that could not reach Apple's JWKS; v5 is for the enclave that can.
-  // v6 predates the 0.1.8 kit; v7 is the first address to meet 0.1.6's split of
-  // `not_enrolled` from `enrollment_pending` and 0.1.7's next enclave measurement.
-  // `socialRecovery: true` pins the enclave measurements shipped in the kit; the
-  // feature must also be enabled for this app in the Cavos dashboard.
-  const base = {
-    appId: APP_ID,
-    chain,
-    network: 'testnet' as const,
-    appSalt: 'cavos-demo-v7',
-    socialRecovery: true,
-  };
-  switch (chain) {
-    case 'solana':
-      return { ...base, rpcUrl: SOLANA_RPC };
-    case 'stellar':
-      return { ...base };
-    case 'starknet':
-      return { ...base, paymasterApiKey: STARKNET_PAYMASTER };
-  }
-}
-
 export default function Page() {
-  // `null` until the saved chain is read. localStorage isn't available during
-  // SSR, so it can't seed useState without a hydration mismatch — but mounting
-  // the provider on a default chain and switching a tick later would remount it
-  // through `key`, and that loses an OAuth callback: the first provider strips
-  // the one-time code from the URL before the second one can read it, dropping
-  // the user back on the sign-in screen. So mount the provider once, after the
-  // chain is known.
-  const [chain, setChain] = useState<Chain | null>(null);
+  // How a new device gets authorized is the app's decision, so in a demo of the
+  // SDK it has to be visible and switchable — otherwise only one of the two
+  // paths is ever exercised. Kept here, above the provider, because that is
+  // where an integrator would write it.
+  //
+  // The stored choice is read after mount, not as the initial state: the server
+  // has no localStorage, so seeding from it renders one thing on the server and
+  // another on the client, and React discards the tree.
+  const [deviceApproval, setDeviceApproval] = useState<DeviceApproval>('enclave');
 
-  // Restore the last-selected chain so a reload keeps context.
+  // Which chain a passkey app runs on. The kit refuses passkey approval for a
+  // multichain app, because a passkey is registered per chain and the others
+  // would have no way to authorize a new device at all — so here the choice
+  // becomes the whole session rather than a view of it.
+  const [passkeyChain, setPasskeyChain] = useState<Chain>('starknet');
+
+  // Both are read after mount, because the server has no localStorage and
+  // seeding state from it renders one thing there and another here. Nothing is
+  // rendered until they are: the provider is keyed on this choice, so mounting
+  // with the default and correcting it a tick later would rebuild the session
+  // in the middle of the OAuth callback it was busy consuming.
+  const [settingsRead, setSettingsRead] = useState(false);
   useEffect(() => {
-    const saved = localStorage.getItem('cavos-demo-chain') as Chain | null;
-    setChain(saved && saved in CHAINS ? saved : 'solana');
+    setDeviceApproval(loadDeviceApproval());
+    setPasskeyChain(loadPasskeyChain());
+    setSettingsRead(true);
   }, []);
-
-  const handleSetChain = (c: Chain) => {
-    setChain(c);
-    localStorage.setItem('cavos-demo-chain', c);
+  const choosePasskeyChain = (next: Chain) => {
+    storePasskeyChain(next as ReturnType<typeof loadPasskeyChain>);
+    setPasskeyChain(next);
   };
 
-  // One paint on the demo's own background while the chain resolves.
-  if (!chain) return <div className="min-h-screen bg-surface" />;
+  const config = useMemo<CavosConfig>(
+    () => ({
+      appId: APP_ID,
+      chains: deviceApproval === 'passkey' ? [passkeyChain] : ['starknet', 'solana', 'stellar'],
+      network: 'testnet',
+      // Names this app's device-key slot, so it is stable forever: changing it
+      // makes every returning user's device unknown to their wallet. The
+      // -kit22-* values it went through were deliberate resets while the
+      // address model was still moving.
+      appSalt: 'cavos-demo',
+      socialRecovery: true,
+      deviceApproval,
+      // Per chain, not one for all: a single `rpcUrl` reaches every chain, so
+      // the Solana node ends up answering Starknet's calls with "Method not
+      // found".
+      rpcUrls: { solana: SOLANA_RPC },
+      paymasterApiKey: STARKNET_PAYMASTER,
+    }),
+    [deviceApproval, passkeyChain],
+  );
 
-  const config = buildConfig(chain);
+  const chooseDeviceApproval = (next: DeviceApproval) => {
+    storeDeviceApproval(next);
+    setDeviceApproval(next);
+  };
 
   // modal is undefined → the provider does NOT mount its own overlay modal;
   // the Demo renders an inline <CavosAuthModal> as a live preview instead.
-  // `key={chain}` forces a clean remount of the provider (and all auth state)
-  // whenever the chain changes — effectively a sign-out + fresh wallet.
+  //
+  // The key is the shape of the session, not the chain in view. A session holds
+  // its wallets from the moment it connects, so changing which chains are
+  // configured has to build a new one — switching to passkey approval makes the
+  // session single-chain, and without this the old three-chain session stayed,
+  // showing Stellar while acting on Starknet. Switching the active chain within
+  // a multichain session still remounts nothing.
+  const sessionKey = deviceApproval === 'passkey' ? `passkey:${passkeyChain}` : 'enclave';
+
+  if (!settingsRead) return null;
+
   return (
-    <CavosProvider key={chain} config={config}>
-      <Demo chain={chain} setChain={handleSetChain} />
+    <CavosProvider key={sessionKey} config={config}>
+      <Demo
+        deviceApproval={deviceApproval}
+        setDeviceApproval={chooseDeviceApproval}
+        passkeyChain={passkeyChain}
+        setPasskeyChain={choosePasskeyChain}
+      />
     </CavosProvider>
   );
 }
