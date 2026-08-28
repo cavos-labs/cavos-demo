@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CavosProvider } from '@cavos/kit/react';
 import type { CavosConfig } from '@cavos/kit/react';
 import { Demo } from '@/components/Demo';
@@ -16,7 +16,12 @@ export default function Page() {
   // SDK it has to be visible and switchable — otherwise only one of the two
   // paths is ever exercised. Kept here, above the provider, because that is
   // where an integrator would write it.
-  const [deviceApproval, setDeviceApproval] = useState<DeviceApproval>(loadDeviceApproval);
+  //
+  // The stored choice is read after mount, not as the initial state: the server
+  // has no localStorage, so seeding from it renders one thing on the server and
+  // another on the client, and React discards the tree.
+  const [deviceApproval, setDeviceApproval] = useState<DeviceApproval>('enclave');
+  useEffect(() => setDeviceApproval(loadDeviceApproval()), []);
 
   const config = useMemo<CavosConfig>(
     () => ({
