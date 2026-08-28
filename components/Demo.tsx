@@ -167,8 +167,12 @@ export function Demo() {
             {isReady ? (
               <DevTools configCode={configCode} chain={chain} />
             ) : isMobile ? (
+              // A device that needs approving is not a signed-out device: the
+              // session is intact, this browser just is not a signer yet. Left
+              // behind the launch button it reads as being logged out, so the
+              // modal — which has the approval flow — opens on its own.
               <CavosAuthModal
-                open={authOpen}
+                open={authOpen || walletStatus.needsDeviceApproval}
                 onClose={() => setAuthOpen(false)}
                 appName={appName || undefined}
                 appLogo={appLogo || undefined}
