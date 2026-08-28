@@ -14,8 +14,17 @@ function shorten(s: string, lead = 6, tail = 6) {
 }
 
 export function DevTools({ configCode, chain }: { configCode: string; chain: Chain }) {
-  const { address, user, logout } = useCavos();
+  const { address, user, logout, session, configuredChains, setChain } = useCavos();
   const meta = CHAINS[chain];
+
+  // One login holds a wallet on every configured chain, so show them all rather
+  // than only the active one — the point of the multi-chain session is that the
+  // others are not hypothetical. Clicking one makes it active; no re-login.
+  const wallets = (configuredChains ?? [chain]).map((c) => ({
+    chain: c,
+    meta: CHAINS[c],
+    address: (c === chain ? address : session?.wallet(c)?.address) ?? null,
+  }));
   const [copiedAddr, setCopiedAddr] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
@@ -43,35 +52,61 @@ export function DevTools({ configCode, chain }: { configCode: string; chain: Cha
         </div>
       </div>
 
-      {/* Wallet address */}
+      {/* Wallets — every configured chain, active one first-class */}
       <div className="mt-5">
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-          device-signer wallet · {meta.label} testnet
+          device-signer wallets · testnet
         </p>
-        <div className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5">
-          <code className="min-w-0 flex-1 truncate font-mono text-[13px] font-medium text-ink">
-            {address ? shorten(address, 8, 8) : '—'}
-          </code>
-          {address && (
-            <button
-              onClick={() => copy(address, 'addr')}
-              className="shrink-0 rounded p-1 text-muted transition-colors hover:bg-white hover:text-ink"
-              aria-label="Copy address"
-            >
-              {copiedAddr ? <Check size={14} className="text-brand" /> : <Copy size={14} />}
-            </button>
-          )}
+        <div className="space-y-1.5">
+          {wallets.map((w) => {
+            const isActive = w.chain === chain;
+            return (
+              <button
+                key={w.chain}
+                type="button"
+                onClick={() => !isActive && setChain(w.chain)}
+                disabled={isActive}
+                // The active row is the only one that is not a control, so it
+                // is the only one that does not react to a press. The others
+                // lift on hover and take the global press feedback.
+                className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition-[border-color,background-color,box-shadow] duration-150 ${
+                  isActive
+                    ? 'border-brand bg-brand-soft/40 shadow-[0_1px_2px_rgba(10,10,15,0.04)] cursor-default'
+                    : 'border-line bg-surface hover:border-line-strong hover:bg-white'
+                }`}
+              >
+                <span className="shrink-0 text-[11px] font-medium text-muted">{w.meta.label}</span>
+                <code className="min-w-0 flex-1 truncate font-mono text-[13px] font-medium text-ink">
+                  {w.address ? shorten(w.address, 6, 6) : '—'}
+                </code>
+                {isActive && (
+                  <span className="shrink-0 rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-semibold text-brand">
+                    Active
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
         {address && (
-          <a
-            href={meta.explorer(address, 'address')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand hover:text-brand-hover"
-          >
-            View on {meta.label} Explorer
-            <ArrowUpRight size={13} />
-          </a>
+          <div className="mt-2 flex items-center gap-3">
+            <button
+              onClick={() => copy(address, 'addr')}
+              className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-muted hover:text-ink"
+            >
+              {copiedAddr ? <Check size={13} className="text-brand" /> : <Copy size={13} />}
+              Copy {meta.label} address
+            </button>
+            <a
+              href={meta.explorer(address, 'address')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand hover:text-brand-hover"
+            >
+              Explorer
+              <ArrowUpRight size={13} />
+            </a>
+          </div>
         )}
       </div>
 

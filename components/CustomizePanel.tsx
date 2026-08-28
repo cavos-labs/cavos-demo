@@ -164,7 +164,8 @@ export function CustomizePanel(p: Props) {
         </div>
         <ChainSelect chain={p.chain} setChain={p.setChain} />
         <p className="mt-2 text-[11px] leading-relaxed text-muted">
-          Switching chain signs you out — each chain uses a separate wallet.
+          One login, a wallet on every chain. Switching picks the active one —
+          no sign-out, no second account.
         </p>
       </div>
 

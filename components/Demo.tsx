@@ -43,8 +43,21 @@ function themeForHex(hex: string): 'light' | 'dark' {
   return L > 0.45 ? 'light' : 'dark';
 }
 
-export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) => void }) {
-  const { walletStatus } = useCavos();
+export function Demo() {
+  // Chain comes from the session, not from a remount: one login holds a wallet
+  // on every configured chain and `setChain` just picks the active one.
+  //
+  // Before there is a session it is still a live setting — it drives the config
+  // snippet and the modal preview — so it is held here and handed to the session
+  // only once one exists. `setChain` rightly refuses to switch a session that
+  // has not connected yet.
+  const { walletStatus, chain: sessionChain, setChain: setSessionChain, isAuthenticated } = useCavos();
+  const [previewChain, setPreviewChain] = useState<Chain>('starknet');
+  const chain = isAuthenticated ? sessionChain : previewChain;
+  const setChain = (next: Chain) => {
+    setPreviewChain(next);
+    if (isAuthenticated) setSessionChain(next);
+  };
   const isMobile = useIsMobile();
   const [authOpen, setAuthOpen] = useState(false);
 
@@ -63,21 +76,25 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
     background === 'custom'
       ? { theme: themeForHex(customBg), backgroundColor: customBg }
       : BG_MAP[background];
-  const isReady = walletStatus.isReady;
+  // A lazily-deployed wallet is usable before it exists on-chain: it has an
+  // address, this device owns it, and it can sign. Gating the panel on
+  // `isReady` alone left the demo on the sign-in preview after a successful
+  // sign-up, because the account only turns ready on its first execute.
+  const isReady = walletStatus.isReady || walletStatus.isUndeployed;
 
   const configCode = useMemo(() => {
+    // Configuring every chain means every chain's requirement applies: Starknet
+    // needs the paymaster key, Solana a real RPC (the public devnet endpoint
+    // rejects browser traffic). Stellar needs neither.
     const chainExtras =
-      chain === 'solana'
-        ? `\n    rpcUrl: 'YOUR_SOLANA_RPC',`
-        : chain === 'starknet'
-          ? `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',`
-          : '';
+      `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',` +
+      `\n    rpcUrl: 'YOUR_SOLANA_RPC',`;
     return `import { CavosProvider } from '@cavos/kit/react';
 
 <CavosProvider
   config={{
     appId: 'YOUR_APP_ID',
-    chain: '${chain}',
+    chains: ['starknet', 'solana', 'stellar'],
     network: 'testnet',
     appSalt: 'my-app',
     socialRecovery: true,${chainExtras}
