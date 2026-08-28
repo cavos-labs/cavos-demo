@@ -64,7 +64,7 @@ export function Demo({
   // snippet and the modal preview — so it is held here and handed to the session
   // only once one exists. `setChain` rightly refuses to switch a session that
   // has not connected yet.
-  const { walletStatus, chain: sessionChain, setChain: setSessionChain, isAuthenticated, address, authError } =
+  const { walletStatus, chain: sessionChain, setChain: setSessionChain, isAuthenticated, address } =
     useCavos();
   const [previewChain, setPreviewChain] = useState<Chain>('starknet');
   // On passkeys the session holds exactly one chain, so picking a chain picks
@@ -197,28 +197,6 @@ export function Demo({
           deviceApproval={deviceApproval}
           setDeviceApproval={setDeviceApproval}
         />
-
-        {/* A stuck spinner tells nobody anything, least of all on a phone with
-            no devtools. This says which state the session is actually in, so a
-            failure can be read off the screen and reported. */}
-        {isAuthenticated && (
-          <div className="col-span-full -mt-2 rounded-lg border border-line bg-surface px-3 py-2 font-mono text-[11px] leading-relaxed text-muted">
-            <span className="text-ink">{chain}</span>
-            {' · '}
-            {walletStatus.isReady
-              ? 'ready'
-              : walletStatus.isUndeployed
-                ? 'undeployed'
-                : walletStatus.needsDeviceApproval
-                  ? 'needs-device-approval'
-                  : walletStatus.isDeploying
-                    ? 'deploying'
-                    : 'connecting'}
-            {walletStatus.isSocialRecovering && ' · recovering'}
-            {address && ` · ${address.slice(0, 6)}…${address.slice(-4)}`}
-            {authError && <span className="text-red-600"> · {authError}</span>}
-          </div>
-        )}
 
         {/* Center — live preview / dev tools */}
         <section className="flex items-start justify-center">
