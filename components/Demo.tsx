@@ -135,7 +135,7 @@ export function Demo({
     chains: ${deviceApproval === 'passkey' ? `['${chain}']` : "['starknet', 'solana', 'stellar']"},
     network: 'testnet',
     appSalt: 'my-app',
-    socialRecovery: true,
+    socialRecovery: ${deviceApproval === 'enclave'},
     deviceApproval: '${deviceApproval}',${chainExtras}
   }}
   modal={{

@@ -44,11 +44,6 @@ const COMING_SOON: { label: string; icon: React.ReactNode }[] = [
   { label: 'Wallets', icon: <Wallet size={13} /> },
 ];
 
-const APPROVALS: { key: DeviceApproval; label: string }[] = [
-  { key: 'enclave', label: 'Enclave' },
-  { key: 'passkey', label: 'Passkey' },
-];
-
 interface Props {
   chain: Chain;
   setChain: (c: Chain) => void;
@@ -178,32 +173,39 @@ export function CustomizePanel(p: Props) {
         </p>
       </div>
 
-      {/* Device approval */}
+      {/* Enclave */}
       <div>
         <div className="mb-2.5 flex items-center gap-1.5">
           <ShieldCheck size={12} className="text-muted" />
-          <p className="text-[12px] font-medium text-muted">Device approval</p>
+          <p className="text-[12px] font-medium text-muted">Recovery</p>
         </div>
-        <div className="flex gap-1 rounded-lg border border-line-strong bg-white p-1">
-          {APPROVALS.map((a) => {
-            const active = a.key === p.deviceApproval;
-            return (
-              <button
-                key={a.key}
-                onClick={() => p.setDeviceApproval(a.key)}
-                className={`flex-1 rounded-md px-2 py-1.5 text-[12px] font-medium transition-colors ${
-                  active ? 'bg-ink text-white' : 'text-muted hover:text-ink'
-                }`}
-              >
-                {a.label}
-              </button>
-            );
-          })}
-        </div>
+        <button
+          role="switch"
+          aria-checked={p.deviceApproval === 'enclave'}
+          onClick={() => p.setDeviceApproval(p.deviceApproval === 'enclave' ? 'passkey' : 'enclave')}
+          className="flex w-full items-center justify-between rounded-lg border border-line-strong bg-white px-3 py-2.5 text-left transition-colors hover:border-ink/40"
+        >
+          <span className="text-[13px] font-medium text-ink">Use the enclave</span>
+          <span
+            className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200 ${
+              p.deviceApproval === 'enclave' ? 'bg-brand' : 'bg-line-strong'
+            }`}
+          >
+            <span
+              className={`absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                p.deviceApproval === 'enclave' ? 'translate-x-[18px]' : 'translate-x-[2px]'
+              }`}
+            />
+          </span>
+        </button>
         <p className="mt-2 text-[11px] leading-relaxed text-muted">
           {p.deviceApproval === 'enclave'
-            ? 'A second device is restored by the attested enclave the first time it transacts \u2014 no gesture, and signing in is left alone. Works across every chain in the session.'
-            : 'A second device is authorized at sign-in by the user\u2019s synced passkey \u2014 one gesture, no enclave, nothing to wait for. One chain per app: a passkey is registered per chain.'}
+            ? 'Every account enrols a recovery authority at sign-in, and a new device is restored the first time it transacts \u2014 no gesture, across every chain in the session.'
+            : 'A new device is authorized at sign-in by the user\u2019s synced passkey, the only way in. One chain per app: a passkey is registered per chain.'}
+        </p>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-muted">
+          Either way the user can add a passkey from Security \u2014 it is a factor on the account,
+          not a mode.
         </p>
       </div>
 
