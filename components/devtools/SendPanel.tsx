@@ -6,11 +6,27 @@ import { Send, ExternalLink, Check } from 'lucide-react';
 import { CHAINS, parseNative, type Chain } from '@/lib/chains';
 import { CvBolt } from '../CavosIcons';
 
-// Minimal shape for Solana/Stellar native `execute`. The kit's wallet classes
+// Minimal shapes for the two `execute` signatures. The kit's wallet classes
 // aren't exported from the React entry, so we cast through `unknown`.
 type NativeSendWallet = { execute: (amount: bigint, destination: string) => Promise<string> };
 function asNativeSender(w: unknown): NativeSendWallet {
   return w as NativeSendWallet;
+}
+
+/** Starknet executes a list of contract calls and returns the tx hash. */
+type CallSendWallet = {
+  execute: (calls: { contractAddress: string; entrypoint: string; calldata: string[] }[]) => Promise<{
+    transactionHash: string;
+  }>;
+};
+function asCallSender(w: unknown): CallSendWallet {
+  return w as CallSendWallet;
+}
+
+/** Split a u256 into the `[low, high]` felt pair Cairo expects. */
+function u256(value: bigint): [string, string] {
+  const MASK = (1n << 128n) - 1n;
+  return ['0x' + (value & MASK).toString(16), '0x' + (value >> 128n).toString(16)];
 }
 
 interface Props {
@@ -18,9 +34,12 @@ interface Props {
 }
 
 /**
- * Send native tokens (SOL / XLM) via the wallet's gasless `execute`.
- * Starknet fee-token transfers are not wired (complex calldata), so it shows
- * a notice there.
+ * Send the chain's native token via the wallet's gasless `execute`.
+ *
+ * Solana and Stellar take `(amount, destination)`. Starknet has no native
+ * asset — its fee token is an ERC-20 like any other — so the same intent is an
+ * ordinary `transfer` call, which is also the honest demonstration of the
+ * account: an arbitrary contract call, signed by the device, gas sponsored.
  */
 export function SendPanel({ chain }: Props) {
   const { wallet, address } = useCavos();
@@ -63,9 +82,17 @@ export function SendPanel({ chain }: Props) {
 
     setStatus('sending');
     try {
-      // Solana and Stellar share the same native execute(amount, destination)
-      // signature (Starknet is gated off via canSendNative).
-      const hash = await asNativeSender(wallet).execute(baseAmount, dest);
+      const hash = meta.feeToken
+        ? (
+            await asCallSender(wallet).execute([
+              {
+                contractAddress: meta.feeToken,
+                entrypoint: 'transfer',
+                calldata: [dest, ...u256(baseAmount)],
+              },
+            ])
+          ).transactionHash
+        : await asNativeSender(wallet).execute(baseAmount, dest);
       setTxHash(hash);
       setStatus('done');
       setDestination('');

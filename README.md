@@ -21,6 +21,4 @@ Open http://localhost:3000.
 
 ## The kit dependency
 
-This demo consumes `@cavos/kit` from a committed tarball (`vendor/cavos-kit-0.0.7.tgz`) so it builds on Vercel without a published release. Once `@cavos/kit@0.0.7` is on npm, swap the dependency in `package.json` to `"@cavos/kit": "^0.0.7"`.
-
-The demo relies on kit `0.0.7` features: the modal's `inline` render mode plus `backgroundColor` / `radius` / `appLogo` theming.
+This demo uses [`@cavos/kit@0.1.10`](https://www.npmjs.com/package/@cavos/kit): a multi-chain session, lazy deploy, and the modal's `inline` render mode plus `backgroundColor` / `radius` / `appLogo` theming.
