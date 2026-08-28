@@ -21,7 +21,9 @@ const config: CavosConfig = {
   // flag is the environment setting, not enclave health, so with this on the UI
   // offers a flow that cannot complete.
   socialRecovery: false,
-  rpcUrl: SOLANA_RPC,
+  // Per chain, not one for all: a single `rpcUrl` reaches every chain, so the
+  // Solana node ends up answering Starknet's calls with "Method not found".
+  rpcUrls: { solana: SOLANA_RPC },
   paymasterApiKey: STARKNET_PAYMASTER,
 };
 

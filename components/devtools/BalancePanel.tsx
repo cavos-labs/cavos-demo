@@ -46,6 +46,7 @@ export function BalancePanel({ chain }: Props) {
   const meta = CHAINS[chain];
 
   const [balance, setBalance] = useState<bigint | null>(null);
+  const [balanceError, setBalanceError] = useState('');
   const [loading, setLoading] = useState(false);
   const [faucetState, setFaucetState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [faucetMsg, setFaucetMsg] = useState('');
@@ -54,6 +55,7 @@ export function BalancePanel({ chain }: Props) {
   const refresh = useCallback(async () => {
     if (!wallet || !address) return;
     setLoading(true);
+    setBalanceError('');
     try {
       if (chain === 'solana') {
         const lamports = await asSolana(wallet).connection.getBalance(address);
@@ -71,7 +73,11 @@ export function BalancePanel({ chain }: Props) {
         setBalance((BigInt(high ?? 0) << 128n) + BigInt(low ?? 0));
       }
     } catch (e) {
+      // Swallowing this turned every failure into the same em dash as "not
+      // loaded yet", which is indistinguishable from a zero balance and made
+      // the panel impossible to debug from the outside.
       setBalance(null);
+      setBalanceError(e instanceof Error ? e.message : 'Balance read failed');
     } finally {
       setLoading(false);
     }
@@ -133,6 +139,10 @@ export function BalancePanel({ chain }: Props) {
           <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
+
+      {balanceError && (
+        <p className="mt-2 text-[12px] leading-relaxed text-red-600">{balanceError}</p>
+      )}
 
       {/* No programmatic faucet: Starknet's is a captcha-gated page, so the
           honest affordance is a link out, not a button that cannot work. */}
