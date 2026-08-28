@@ -3,13 +3,23 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useCavos } from '@cavos/kit/react';
 import { RefreshCw, ArrowDownToLine, Check, ExternalLink } from 'lucide-react';
+import { PublicKey } from '@solana/web3.js';
 import { CHAINS, formatNative, type Chain } from '@/lib/chains';
 import { CvWallet } from '../CavosIcons';
 
 // Structural shapes for the chain-specific wallet members we use. The kit's
 // wallet classes aren't exported from the React entry, so we narrow by the
 // `chain` discriminant at runtime and cast to these minimal shapes.
-type SolanaWallet = { chain: 'solana'; connection: { getBalance: (a: string) => Promise<number>; requestAirdrop: (a: string, l: number) => Promise<string> } };
+// web3.js takes a `PublicKey`, not an address string. Declaring it as a string
+// here made the cast assert a shape the library does not have, and the mistake
+// surfaced only at runtime as `publicKey.toBase58 is not a function`.
+type SolanaWallet = {
+  chain: 'solana';
+  connection: {
+    getBalance: (a: PublicKey) => Promise<number>;
+    requestAirdrop: (a: PublicKey, l: number) => Promise<string>;
+  };
+};
 type StellarWallet = { chain: 'stellar'; balance: () => Promise<bigint> };
 /** Starknet's balance is an ERC-20 read, done through the wallet's provider. */
 type StarknetWallet = {
@@ -58,7 +68,7 @@ export function BalancePanel({ chain }: Props) {
     setBalanceError('');
     try {
       if (chain === 'solana') {
-        const lamports = await asSolana(wallet).connection.getBalance(address);
+        const lamports = await asSolana(wallet).connection.getBalance(new PublicKey(address));
         setBalance(BigInt(lamports));
       } else if (chain === 'stellar') {
         const stroops = await asStellar(wallet).balance();
@@ -97,7 +107,7 @@ export function BalancePanel({ chain }: Props) {
     setTxHash(null);
     try {
       if (chain === 'solana') {
-        const sig = await asSolana(wallet).connection.requestAirdrop(address, 1_000_000_000); // 1 SOL
+        const sig = await asSolana(wallet).connection.requestAirdrop(new PublicKey(address), 1_000_000_000); // 1 SOL
         setTxHash(sig);
         setFaucetState('done');
         setFaucetMsg('1 SOL requested');
