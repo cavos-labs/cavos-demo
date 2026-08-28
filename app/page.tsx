@@ -12,10 +12,12 @@ import {
   storeDeviceApproval,
   storePasskeyChain,
 } from '@/lib/deviceApproval';
+import { prepareKitSession } from '@/lib/kitSession';
 
 const APP_ID = process.env.NEXT_PUBLIC_CAVOS_APP_ID ?? '';
 const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com';
 const STARKNET_PAYMASTER = process.env.NEXT_PUBLIC_STARKNET_PAYMASTER_API_KEY ?? '';
+const ENVIRONMENT = process.env.NEXT_PUBLIC_CAVOS_ENVIRONMENT === 'development' ? 'development' : 'production';
 
 export default function Page() {
   // How a new device gets authorized is the app's decision, so in a demo of the
@@ -41,6 +43,7 @@ export default function Page() {
   // in the middle of the OAuth callback it was busy consuming.
   const [settingsRead, setSettingsRead] = useState(false);
   useEffect(() => {
+    prepareKitSession(APP_ID);
     setDeviceApproval(loadDeviceApproval());
     setPasskeyChain(loadPasskeyChain());
     setSettingsRead(true);
@@ -52,7 +55,8 @@ export default function Page() {
 
   const config = useMemo<CavosConfig>(
     () => ({
-      appId: APP_ID,
+      ...(APP_ID ? { appId: APP_ID } : {}),
+      environment: ENVIRONMENT,
       chains: deviceApproval === 'passkey' ? [passkeyChain] : ['starknet', 'solana', 'stellar'],
       network: 'testnet',
       // Names this app's device-key slot, so it is stable forever: changing it

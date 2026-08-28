@@ -115,6 +115,7 @@ export function Demo({
 <CavosProvider
   config={{
     appId: 'YOUR_APP_ID',
+    environment: 'production',
     chains: ${deviceApproval === 'passkey' ? `['${chain}']` : "['starknet', 'solana', 'stellar']"},
     network: 'testnet',
     appSalt: 'my-app',

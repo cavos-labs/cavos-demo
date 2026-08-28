@@ -1,0 +1,88 @@
+diff --git a/node_modules/@cavos/kit/dist/chunk-OWQVA7UJ.mjs b/node_modules/@cavos/kit/dist/chunk-OWQVA7UJ.mjs
+index 4e22269..d4f4831 100644
+--- a/node_modules/@cavos/kit/dist/chunk-OWQVA7UJ.mjs
++++ b/node_modules/@cavos/kit/dist/chunk-OWQVA7UJ.mjs
+@@ -12,13 +12,18 @@ var HttpWalletRegistry = class {
+     this.opts = opts;
+   }
+   async lookup(userId) {
++    const token = this.opts.authToken();
++    if (!token) throw new Error("registry lookup skipped: no login token");
+     const url = new URL("/api/wallets", this.opts.baseUrl);
+     url.searchParams.set("app_id", this.opts.appId);
+     url.searchParams.set("user_social_id", userId);
+     url.searchParams.set("network", this.opts.network);
+     if (this.opts.environment) url.searchParams.set("environment", this.opts.environment);
+-    const res = await fetch(url, { headers: this.headers() });
+-    if (!res.ok) throw new Error(`registry lookup failed: ${res.status}`);
++    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
++    if (!res.ok) {
++      const t = await res.text().catch(() => "");
++      throw new Error(`registry lookup failed: ${res.status}${t ? ` ${t}` : ""}`);
++    }
+     const data = await res.json();
+     if (!data.found || !data.address) return null;
+     const devices = Array.isArray(data.devices) ? data.devices.map((d) => ({
+diff --git a/node_modules/@cavos/kit/dist/react/index.js b/node_modules/@cavos/kit/dist/react/index.js
+index 66459de..8b0d5ad 100644
+--- a/node_modules/@cavos/kit/dist/react/index.js
++++ b/node_modules/@cavos/kit/dist/react/index.js
+@@ -1313,13 +1313,18 @@ var HttpWalletRegistry = class {
+     this.opts = opts;
+   }
+   async lookup(userId) {
++    const token = this.opts.authToken();
++    if (!token) throw new Error("registry lookup skipped: no login token");
+     const url = new URL("/api/wallets", this.opts.baseUrl);
+     url.searchParams.set("app_id", this.opts.appId);
+     url.searchParams.set("user_social_id", userId);
+     url.searchParams.set("network", this.opts.network);
+     if (this.opts.environment) url.searchParams.set("environment", this.opts.environment);
+-    const res = await fetch(url, { headers: this.headers() });
+-    if (!res.ok) throw new Error(`registry lookup failed: ${res.status}`);
++    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
++    if (!res.ok) {
++      const t = await res.text().catch(() => "");
++      throw new Error(`registry lookup failed: ${res.status}${t ? ` ${t}` : ""}`);
++    }
+     const data = await res.json();
+     if (!data.found || !data.address) return null;
+     const devices = Array.isArray(data.devices) ? data.devices.map((d) => ({
+@@ -9031,6 +9036,7 @@ ${formatConfigProblems(problems)}`);
+     const params = new URLSearchParams(window.location.search);
+     const authData = params.get("cavos_auth_code") || params.get("auth_data") || params.get("zk_auth_data");
+     if (!authData) return;
++    window.__CAVOS_OAUTH_CALLBACK__ = true;
+     const cleanUrl = new URL(window.location.href);
+     cleanUrl.searchParams.delete("cavos_auth_code");
+     cleanUrl.searchParams.delete("auth_data");
+@@ -9351,7 +9357,7 @@ ${formatConfigProblems(problems)}`);
+     if (typeof window === "undefined") return;
+     if (isExternalAuth) return;
+     const params = new URLSearchParams(window.location.search);
+-    if (params.get("cavos_auth_code") || params.get("auth_data") || params.get("zk_auth_data")) return;
++    if (window.__CAVOS_OAUTH_CALLBACK__ || params.get("cavos_auth_code") || params.get("auth_data") || params.get("zk_auth_data")) return;
+     const savedIdentity = auth.restoreIdentity();
+     if (!savedIdentity) {
+       setIsLoading(false);
+diff --git a/node_modules/@cavos/kit/dist/react/index.mjs b/node_modules/@cavos/kit/dist/react/index.mjs
+index 7ad093a..1ee0d14 100644
+--- a/node_modules/@cavos/kit/dist/react/index.mjs
++++ b/node_modules/@cavos/kit/dist/react/index.mjs
+@@ -1826,6 +1826,7 @@ ${formatConfigProblems(problems)}`);
+     const params = new URLSearchParams(window.location.search);
+     const authData = params.get("cavos_auth_code") || params.get("auth_data") || params.get("zk_auth_data");
+     if (!authData) return;
++    window.__CAVOS_OAUTH_CALLBACK__ = true;
+     const cleanUrl = new URL(window.location.href);
+     cleanUrl.searchParams.delete("cavos_auth_code");
+     cleanUrl.searchParams.delete("auth_data");
+@@ -2146,7 +2147,7 @@ ${formatConfigProblems(problems)}`);
+     if (typeof window === "undefined") return;
+     if (isExternalAuth) return;
+     const params = new URLSearchParams(window.location.search);
+-    if (params.get("cavos_auth_code") || params.get("auth_data") || params.get("zk_auth_data")) return;
++    if (window.__CAVOS_OAUTH_CALLBACK__ || params.get("cavos_auth_code") || params.get("auth_data") || params.get("zk_auth_data")) return;
+     const savedIdentity = auth.restoreIdentity();
+     if (!savedIdentity) {
+       setIsLoading(false);

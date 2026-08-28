@@ -17,6 +17,7 @@ Open http://localhost:3000.
 | Var | Purpose |
 |---|---|
 | `NEXT_PUBLIC_CAVOS_APP_ID` | Cavos app id — activates the gasless relayer + branding. Register at cavos.xyz. |
+| `NEXT_PUBLIC_CAVOS_ENVIRONMENT` | `production` (default) or `development`. Must match the dashboard environment the app id belongs to. |
 | `NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL` | Devnet RPC (Alchemy/Helius). Public devnet fails from the browser. |
 
 ## The kit dependency
