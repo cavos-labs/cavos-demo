@@ -54,8 +54,17 @@ export default function Page() {
 
   // modal is undefined → the provider does NOT mount its own overlay modal;
   // the Demo renders an inline <CavosAuthModal> as a live preview instead.
+  //
+  // The key is the shape of the session, not the chain in view. A session holds
+  // its wallets from the moment it connects, so changing which chains are
+  // configured has to build a new one — switching to passkey approval makes the
+  // session single-chain, and without this the old three-chain session stayed,
+  // showing Stellar while acting on Starknet. Switching the active chain within
+  // a multichain session still remounts nothing.
+  const sessionKey = deviceApproval === 'passkey' ? `passkey:${passkeyChain}` : 'enclave';
+
   return (
-    <CavosProvider config={config}>
+    <CavosProvider key={sessionKey} config={config}>
       <Demo
         deviceApproval={deviceApproval}
         setDeviceApproval={chooseDeviceApproval}

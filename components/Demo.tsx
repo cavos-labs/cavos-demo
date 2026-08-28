@@ -56,7 +56,9 @@ export function Demo({
   setPasskeyChain: (c: Chain) => void;
 }) {
   // Chain comes from the session, not from a remount: one login holds a wallet
-  // on every configured chain and `setChain` just picks the active one.
+  // on every configured chain and `setChain` just picks the active one. On
+  // passkeys the session holds a single chain, so there the choice is the
+  // session itself and the provider is keyed on it.
   //
   // Before there is a session it is still a live setting — it drives the config
   // snippet and the modal preview — so it is held here and handed to the session
