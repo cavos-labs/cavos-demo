@@ -16,7 +16,7 @@ const config: CavosConfig = {
   appId: APP_ID,
   chains: ['starknet', 'solana', 'stellar'],
   network: 'testnet',
-  appSalt: 'cavos-demo-kit22',
+  appSalt: 'cavos-demo-kit22-b',
   // The enclave attests 3a97720a…, matching the KMS key policy and the
   // measurements the kit pins, so the flow can actually complete now.
   socialRecovery: true,
