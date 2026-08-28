@@ -16,9 +16,6 @@ function buildConfig(defaultChain: Chain): CavosConfig {
   // The salt names this app's device-key slot. Bumping it gives QA a fresh set
   // of accounts without colliding with production (v7) or the previous local
   // lazy-deploy pass (v9-lazy). v12 is a founder-run QA salt (v7 prod, v9-lazy, v10/v11 kit22 retries).
-  // `socialRecovery: true` pins the enclave measurements shipped in the kit; the
-  // feature must also be enabled for this app in the Cavos dashboard.
-  //
   // A single `rpcUrl` is applied to every chain, so a Solana RPC would break
   // Starknet. Omit it: Solana uses the kit's public devnet default, Starknet
   // uses the kit's sepolia default.
@@ -28,7 +25,6 @@ function buildConfig(defaultChain: Chain): CavosConfig {
     defaultChain,
     network: 'testnet',
     appSalt: 'cavos-demo-v12-kit22',
-    socialRecovery: true,
     paymasterApiKey: STARKNET_PAYMASTER,
   };
 }

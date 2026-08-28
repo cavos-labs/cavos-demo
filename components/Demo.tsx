@@ -90,7 +90,6 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
     defaultChain: '${activeChain}',
     network: 'testnet',
     appSalt: 'my-app',
-    socialRecovery: true,
     paymasterApiKey: 'YOUR_PAYMASTER_KEY',
   }}
   modal={{
