@@ -23,7 +23,7 @@ export default function Page() {
       appId: APP_ID,
       chains: ['starknet', 'solana', 'stellar'],
       network: 'testnet',
-      appSalt: 'cavos-demo-kit22-f',
+      appSalt: 'cavos-demo-kit22-g',
       socialRecovery: true,
       deviceApproval,
       // Per chain, not one for all: a single `rpcUrl` reaches every chain, so
