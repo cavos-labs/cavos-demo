@@ -10,12 +10,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Cavos Demo — Customize your embedded wallet login',
+  title: 'Cavos Demo: customize your embedded wallet login',
   description:
-    'Try Cavos live. Customize the login modal — background, accent, providers — and sign in to create a real device-signer wallet on Solana. No install.',
+    'Try Cavos live. Customize the login modal (background, accent, providers) and sign in to create a real device-signer wallet on Solana. No install.',
   metadataBase: new URL('https://demo.cavos.xyz'),
   openGraph: {
-    title: 'Cavos Demo — Customize your embedded wallet login',
+    title: 'Cavos Demo: customize your embedded wallet login',
     description:
       'Customize the login modal and sign in to create a real device-signer wallet on Solana.',
     url: 'https://demo.cavos.xyz',
@@ -27,13 +27,13 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Cavos — MPC-free embedded wallets with on-chain RSA verification',
+        alt: 'Cavos: MPC-free embedded wallets with on-chain RSA verification',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Cavos Demo — Customize your embedded wallet login',
+    title: 'Cavos Demo: customize your embedded wallet login',
     description:
       'Customize the login modal and sign in to create a real device-signer wallet on Solana.',
     creator: '@cavosxyz',
