@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sliders, Lock, Wallet, Link2, ChevronDown, Check } from 'lucide-react';
+import { Sliders, Lock, Wallet, Link2, ChevronDown, Check, ShieldCheck } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import {
   FaApple,
@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fa6';
 import { SiFarcaster } from 'react-icons/si';
 import { CHAIN_LIST, CHAINS, type Chain } from '@/lib/chains';
+import type { DeviceApproval } from '@/lib/deviceApproval';
 import { ChainLogo } from './ChainLogo';
 
 export type Background = 'white' | 'dark' | 'soft' | 'custom';
@@ -43,6 +44,11 @@ const COMING_SOON: { label: string; icon: React.ReactNode }[] = [
   { label: 'Wallets', icon: <Wallet size={13} /> },
 ];
 
+const APPROVALS: { key: DeviceApproval; label: string }[] = [
+  { key: 'enclave', label: 'Enclave' },
+  { key: 'passkey', label: 'Passkey' },
+];
+
 interface Props {
   chain: Chain;
   setChain: (c: Chain) => void;
@@ -60,6 +66,8 @@ interface Props {
   setRadius: (n: number) => void;
   providers: ProviderKey[];
   setProviders: (p: ProviderKey[]) => void;
+  deviceApproval: DeviceApproval;
+  setDeviceApproval: (v: DeviceApproval) => void;
 }
 
 function Swatch({
@@ -166,6 +174,35 @@ export function CustomizePanel(p: Props) {
         <p className="mt-2 text-[11px] leading-relaxed text-muted">
           One login, a wallet on every chain. Switching picks the active one —
           no sign-out, no second account.
+        </p>
+      </div>
+
+      {/* Device approval */}
+      <div>
+        <div className="mb-2.5 flex items-center gap-1.5">
+          <ShieldCheck size={12} className="text-muted" />
+          <p className="text-[12px] font-medium text-muted">Device approval</p>
+        </div>
+        <div className="flex gap-1 rounded-lg border border-line-strong bg-white p-1">
+          {APPROVALS.map((a) => {
+            const active = a.key === p.deviceApproval;
+            return (
+              <button
+                key={a.key}
+                onClick={() => p.setDeviceApproval(a.key)}
+                className={`flex-1 rounded-md px-2 py-1.5 text-[12px] font-medium transition-colors ${
+                  active ? 'bg-ink text-white' : 'text-muted hover:text-ink'
+                }`}
+              >
+                {a.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted">
+          {p.deviceApproval === 'enclave'
+            ? 'A second device is restored by the attested enclave, from the login just completed. No gesture.'
+            : 'A second device is authorized by the user\u2019s synced passkey, with one gesture. No enclave.'}
         </p>
       </div>
 

@@ -8,6 +8,7 @@ import { CvSpark, CvCode, CvShield } from './CavosIcons';
 import { CustomizePanel, type Background, type ProviderKey } from './CustomizePanel';
 import { DevTools } from './DevTools';
 import type { Chain } from '@/lib/chains';
+import type { DeviceApproval } from '@/lib/deviceApproval';
 
 // Mirrors the kit's internal mobile breakpoint (max-width: 640px) so the
 // launch-button UX switches at exactly the same width the modal becomes a
@@ -43,7 +44,13 @@ function themeForHex(hex: string): 'light' | 'dark' {
   return L > 0.45 ? 'light' : 'dark';
 }
 
-export function Demo() {
+export function Demo({
+  deviceApproval,
+  setDeviceApproval,
+}: {
+  deviceApproval: DeviceApproval;
+  setDeviceApproval: (v: DeviceApproval) => void;
+}) {
   // Chain comes from the session, not from a remount: one login holds a wallet
   // on every configured chain and `setChain` just picks the active one.
   //
@@ -101,7 +108,8 @@ export function Demo() {
     chains: ['starknet', 'solana', 'stellar'],
     network: 'testnet',
     appSalt: 'my-app',
-    socialRecovery: true,${chainExtras}
+    socialRecovery: true,
+    deviceApproval: '${deviceApproval}',${chainExtras}
   }}
   modal={{
     appName: '${appName}',
@@ -116,7 +124,18 @@ export function Demo() {
 >
   <App />
 </CavosProvider>`;
-  }, [chain, appName, theme, accent, background, backgroundColor, customBg, radius, providers]);
+  }, [
+    chain,
+    appName,
+    theme,
+    accent,
+    background,
+    backgroundColor,
+    customBg,
+    radius,
+    providers,
+    deviceApproval,
+  ]);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -163,6 +182,8 @@ export function Demo() {
           setRadius={setRadius}
           providers={providers}
           setProviders={setProviders}
+          deviceApproval={deviceApproval}
+          setDeviceApproval={setDeviceApproval}
         />
 
         {/* A stuck spinner tells nobody anything, least of all on a phone with
