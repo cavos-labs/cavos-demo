@@ -14,7 +14,7 @@ function shorten(s: string, lead = 6, tail = 6) {
 }
 
 export function DevTools({ configCode, chain }: { configCode: string; chain: Chain }) {
-  const { address, user, logout } = useCavos();
+  const { address, user, logout, walletStatus } = useCavos();
   const meta = CHAINS[chain];
   const [copiedAddr, setCopiedAddr] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -42,6 +42,12 @@ export function DevTools({ configCode, chain }: { configCode: string; chain: Cha
           {user?.email && <p className="text-[12px] text-muted">{user.email}</p>}
         </div>
       </div>
+
+      {walletStatus.isUndeployed && (
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-[12.5px] leading-relaxed text-amber-900">
+          Account is undeployed on {meta.label}. The first send / execute deploys it lazily.
+        </p>
+      )}
 
       {/* Wallet address */}
       <div className="mt-5">

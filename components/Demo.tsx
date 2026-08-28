@@ -44,7 +44,7 @@ function themeForHex(hex: string): 'light' | 'dark' {
 }
 
 export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) => void }) {
-  const { walletStatus } = useCavos();
+  const { isAuthenticated, setChain: kitSetChain, chain: kitChain } = useCavos();
   const isMobile = useIsMobile();
   const [authOpen, setAuthOpen] = useState(false);
 
@@ -63,24 +63,35 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
     background === 'custom'
       ? { theme: themeForHex(customBg), backgroundColor: customBg }
       : BG_MAP[background];
-  const isReady = walletStatus.isReady;
+
+  // After connect, kit owns the selected chain (setChain does not remount).
+  // Before connect, kit.setChain throws, so the picker drives parent state
+  // which becomes `defaultChain` on the next connect.
+  const activeChain = isAuthenticated ? kitChain : chain;
+  const handleSetChain = (c: Chain) => {
+    setChain(c);
+    if (isAuthenticated) {
+      void kitSetChain(c);
+    }
+  };
+
+  // Lazy deploy: a brand-new account is `undeployed`, not `ready`. The user is
+  // still signed in — first execute deploys — so show the wallet UI on
+  // isAuthenticated, not isReady.
+  const showWallet = isAuthenticated;
 
   const configCode = useMemo(() => {
-    const chainExtras =
-      chain === 'solana'
-        ? `\n    rpcUrl: 'YOUR_SOLANA_RPC',`
-        : chain === 'starknet'
-          ? `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',`
-          : '';
     return `import { CavosProvider } from '@cavos/kit/react';
 
 <CavosProvider
   config={{
     appId: 'YOUR_APP_ID',
-    chain: '${chain}',
+    chains: ['solana', 'stellar', 'starknet'],
+    defaultChain: '${activeChain}',
     network: 'testnet',
     appSalt: 'my-app',
-    socialRecovery: true,${chainExtras}
+    socialRecovery: true,
+    paymasterApiKey: 'YOUR_PAYMASTER_KEY',
   }}
   modal={{
     appName: '${appName}',
@@ -95,7 +106,7 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
 >
   <App />
 </CavosProvider>`;
-  }, [chain, appName, theme, accent, background, backgroundColor, customBg, radius, providers]);
+  }, [activeChain, appName, theme, accent, background, backgroundColor, radius, providers]);
 
   return (
     <div className="min-h-screen bg-surface">
@@ -126,8 +137,8 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
       <main className="mx-auto grid max-w-[1180px] grid-cols-1 gap-6 px-5 py-10 pb-32 md:px-8 md:pb-10 lg:grid-cols-[340px_1fr_284px]">
         {/* Left — Customize */}
         <CustomizePanel
-          chain={chain}
-          setChain={setChain}
+          chain={activeChain}
+          setChain={handleSetChain}
           background={background}
           setBackground={setBackground}
           customBg={customBg}
@@ -147,8 +158,8 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
         {/* Center — live preview / dev tools */}
         <section className="flex items-start justify-center">
           <div className="w-full max-w-[400px]">
-            {isReady ? (
-              <DevTools configCode={configCode} chain={chain} />
+            {showWallet ? (
+              <DevTools configCode={configCode} chain={activeChain} />
             ) : isMobile ? (
               <CavosAuthModal
                 open={authOpen}
@@ -225,7 +236,7 @@ export function Demo({ chain, setChain }: { chain: Chain; setChain: (c: Chain) =
       </main>
 
       {/* ── Mobile sticky launch CTA (hidden once authenticated / on desktop) ── */}
-      {isMobile && !isReady && (
+      {isMobile && !showWallet && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/90 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:hidden">
           <button
             onClick={() => setAuthOpen(true)}

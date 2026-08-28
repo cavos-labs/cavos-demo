@@ -8,47 +8,36 @@ import { CHAINS } from '@/lib/chains';
 import type { Chain } from '@/lib/chains';
 
 const APP_ID = process.env.NEXT_PUBLIC_CAVOS_APP_ID ?? '';
-const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com';
 const STARKNET_PAYMASTER = process.env.NEXT_PUBLIC_STARKNET_PAYMASTER_API_KEY ?? '';
 
-function buildConfig(chain: Chain): CavosConfig {
-  // The salt is part of the address derivation, so bumping it gives every user a
-  // fresh account. v2 came with the 2026-08-01 sepolia class hash, to move off
-  // the retired one. Every bump since has been for social recovery, which enrols
-  // once per wallet and answers 409 for a wallet that already holds a record —
-  // so a wallet whose enrolment failed can never retry, and testing a fix needs
-  // an address that has never tried. v3 ran against a control plane that still forced one provider per
-  // environment; v4 against one that takes the provider from the credential but
-  // an enclave that could not reach Apple's JWKS; v5 is for the enclave that can.
-  // v6 predates the 0.1.8 kit; v7 is the first address to meet 0.1.6's split of
-  // `not_enrolled` from `enrollment_pending` and 0.1.7's next enclave measurement.
+const DEMO_CHAINS: Chain[] = ['solana', 'stellar', 'starknet'];
+
+function buildConfig(defaultChain: Chain): CavosConfig {
+  // The salt names this app's device-key slot. Bumping it gives QA a fresh set
+  // of accounts without colliding with production (v7) or the previous local
+  // lazy-deploy pass (v9-lazy). v10 is the kit#22 multi-chain session.
   // `socialRecovery: true` pins the enclave measurements shipped in the kit; the
   // feature must also be enabled for this app in the Cavos dashboard.
-  const base = {
+  //
+  // A single `rpcUrl` is applied to every chain, so a Solana RPC would break
+  // Starknet. Omit it: Solana uses the kit's public devnet default, Starknet
+  // uses the kit's sepolia default.
+  return {
     appId: APP_ID,
-    chain,
-    network: 'testnet' as const,
-    appSalt: 'cavos-demo-v7',
+    chains: DEMO_CHAINS,
+    defaultChain,
+    network: 'testnet',
+    appSalt: 'cavos-demo-v10-kit22',
     socialRecovery: true,
+    paymasterApiKey: STARKNET_PAYMASTER,
   };
-  switch (chain) {
-    case 'solana':
-      return { ...base, rpcUrl: SOLANA_RPC };
-    case 'stellar':
-      return { ...base };
-    case 'starknet':
-      return { ...base, paymasterApiKey: STARKNET_PAYMASTER };
-  }
 }
 
 export default function Page() {
   // `null` until the saved chain is read. localStorage isn't available during
-  // SSR, so it can't seed useState without a hydration mismatch — but mounting
-  // the provider on a default chain and switching a tick later would remount it
-  // through `key`, and that loses an OAuth callback: the first provider strips
-  // the one-time code from the URL before the second one can read it, dropping
-  // the user back on the sign-in screen. So mount the provider once, after the
-  // chain is known.
+  // SSR, so it can't seed useState without a hydration mismatch. Mount the
+  // provider once, after the default chain is known, so an OAuth callback is
+  // not lost to a second mount.
   const [chain, setChain] = useState<Chain | null>(null);
 
   // Restore the last-selected chain so a reload keeps context.
@@ -69,10 +58,11 @@ export default function Page() {
 
   // modal is undefined → the provider does NOT mount its own overlay modal;
   // the Demo renders an inline <CavosAuthModal> as a live preview instead.
-  // `key={chain}` forces a clean remount of the provider (and all auth state)
-  // whenever the chain changes — effectively a sign-out + fresh wallet.
+  // One provider for all configured chains. Switching chain calls kit
+  // `setChain` (see Demo) and does not remount — connect stays, wallets
+  // stay, only the selected chain changes.
   return (
-    <CavosProvider key={chain} config={config}>
+    <CavosProvider config={config}>
       <Demo chain={chain} setChain={handleSetChain} />
     </CavosProvider>
   );
