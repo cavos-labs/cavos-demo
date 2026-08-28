@@ -55,7 +55,11 @@ export default function Page() {
       appId: APP_ID,
       chains: deviceApproval === 'passkey' ? [passkeyChain] : ['starknet', 'solana', 'stellar'],
       network: 'testnet',
-      appSalt: 'cavos-demo-kit22-g',
+      // Names this app's device-key slot, so it is stable forever: changing it
+      // makes every returning user's device unknown to their wallet. The
+      // -kit22-* values it went through were deliberate resets while the
+      // address model was still moving.
+      appSalt: 'cavos-demo',
       socialRecovery: true,
       deviceApproval,
       // Per chain, not one for all: a single `rpcUrl` reaches every chain, so
