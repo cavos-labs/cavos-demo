@@ -20,6 +20,9 @@ const config: CavosConfig = {
   // The enclave attests 3a97720a…, matching the KMS key policy and the
   // measurements the kit pins, so the flow can actually complete now.
   socialRecovery: true,
+  // Said out loud rather than inferred: a new device is authorized by the
+  // enclave, not by a passkey. An app picks one.
+  deviceApproval: 'enclave',
   // Per chain, not one for all: a single `rpcUrl` reaches every chain, so the
   // Solana node ends up answering Starknet's calls with "Method not found".
   rpcUrls: { solana: SOLANA_RPC },
