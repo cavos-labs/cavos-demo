@@ -172,8 +172,9 @@ export function CustomizePanel(p: Props) {
         </div>
         <ChainSelect chain={p.chain} setChain={p.setChain} />
         <p className="mt-2 text-[11px] leading-relaxed text-muted">
-          One login, a wallet on every chain. Switching picks the active one —
-          no sign-out, no second account.
+          {p.deviceApproval === 'passkey'
+            ? 'On passkeys the session holds this chain alone, so picking one picks the session \u2014 there is nothing to switch between.'
+            : 'One login, a wallet on every chain. Switching picks the active one \u2014 no sign-out, no second account.'}
         </p>
       </div>
 
@@ -201,8 +202,8 @@ export function CustomizePanel(p: Props) {
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-muted">
           {p.deviceApproval === 'enclave'
-            ? 'A second device is restored by the attested enclave, from the login just completed. No gesture.'
-            : 'A second device is authorized by the user\u2019s synced passkey, with one gesture. No enclave.'}
+            ? 'A second device is restored by the attested enclave the first time it transacts \u2014 no gesture, and signing in is left alone. Works across every chain in the session.'
+            : 'A second device is authorized at sign-in by the user\u2019s synced passkey \u2014 one gesture, no enclave, nothing to wait for. One chain per app: a passkey is registered per chain.'}
         </p>
       </div>
 
