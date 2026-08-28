@@ -47,9 +47,13 @@ function themeForHex(hex: string): 'light' | 'dark' {
 export function Demo({
   deviceApproval,
   setDeviceApproval,
+  passkeyChain,
+  setPasskeyChain,
 }: {
   deviceApproval: DeviceApproval;
   setDeviceApproval: (v: DeviceApproval) => void;
+  passkeyChain: Chain;
+  setPasskeyChain: (c: Chain) => void;
 }) {
   // Chain comes from the session, not from a remount: one login holds a wallet
   // on every configured chain and `setChain` just picks the active one.
@@ -61,8 +65,14 @@ export function Demo({
   const { walletStatus, chain: sessionChain, setChain: setSessionChain, isAuthenticated, address, authError } =
     useCavos();
   const [previewChain, setPreviewChain] = useState<Chain>('starknet');
-  const chain = isAuthenticated ? sessionChain : previewChain;
+  // On passkeys the session holds exactly one chain, so picking a chain picks
+  // the session -- there is no switching within it.
+  const chain = deviceApproval === 'passkey' ? passkeyChain : isAuthenticated ? sessionChain : previewChain;
   const setChain = (next: Chain) => {
+    if (deviceApproval === 'passkey') {
+      setPasskeyChain(next);
+      return;
+    }
     setPreviewChain(next);
     if (isAuthenticated) setSessionChain(next);
   };
@@ -105,7 +115,7 @@ export function Demo({
 <CavosProvider
   config={{
     appId: 'YOUR_APP_ID',
-    chains: ['starknet', 'solana', 'stellar'],
+    chains: ${deviceApproval === 'passkey' ? `['${chain}']` : "['starknet', 'solana', 'stellar']"},
     network: 'testnet',
     appSalt: 'my-app',
     socialRecovery: true,

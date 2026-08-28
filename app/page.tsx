@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CavosProvider } from '@cavos/kit/react';
 import type { CavosConfig } from '@cavos/kit/react';
 import { Demo } from '@/components/Demo';
+import type { Chain } from '@/lib/chains';
 import type { DeviceApproval } from '@/lib/deviceApproval';
 import { loadDeviceApproval, storeDeviceApproval } from '@/lib/deviceApproval';
 
@@ -23,10 +24,16 @@ export default function Page() {
   const [deviceApproval, setDeviceApproval] = useState<DeviceApproval>('enclave');
   useEffect(() => setDeviceApproval(loadDeviceApproval()), []);
 
+  // Which chain a passkey app runs on. The kit refuses passkey approval for a
+  // multichain app, because a passkey is registered per chain and the others
+  // would have no way to authorize a new device at all — so here the choice
+  // becomes the whole session rather than a view of it.
+  const [passkeyChain, setPasskeyChain] = useState<Chain>('starknet');
+
   const config = useMemo<CavosConfig>(
     () => ({
       appId: APP_ID,
-      chains: ['starknet', 'solana', 'stellar'],
+      chains: deviceApproval === 'passkey' ? [passkeyChain] : ['starknet', 'solana', 'stellar'],
       network: 'testnet',
       appSalt: 'cavos-demo-kit22-g',
       socialRecovery: true,
@@ -37,7 +44,7 @@ export default function Page() {
       rpcUrls: { solana: SOLANA_RPC },
       paymasterApiKey: STARKNET_PAYMASTER,
     }),
-    [deviceApproval],
+    [deviceApproval, passkeyChain],
   );
 
   const chooseDeviceApproval = (next: DeviceApproval) => {
@@ -49,7 +56,12 @@ export default function Page() {
   // the Demo renders an inline <CavosAuthModal> as a live preview instead.
   return (
     <CavosProvider config={config}>
-      <Demo deviceApproval={deviceApproval} setDeviceApproval={chooseDeviceApproval} />
+      <Demo
+        deviceApproval={deviceApproval}
+        setDeviceApproval={chooseDeviceApproval}
+        passkeyChain={passkeyChain}
+        setPasskeyChain={setPasskeyChain}
+      />
     </CavosProvider>
   );
 }
