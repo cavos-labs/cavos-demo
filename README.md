@@ -21,4 +21,4 @@ Open http://localhost:3000.
 
 ## The kit dependency
 
-This demo uses [`@cavos/kit@0.1.10`](https://www.npmjs.com/package/@cavos/kit): a multi-chain session, lazy deploy, and the modal's `inline` render mode plus `backgroundColor` / `radius` / `appLogo` theming.
+This demo uses [`@cavos/kit@0.1.11`](https://www.npmjs.com/package/@cavos/kit): a multi-chain session, lazy deploy, and the modal's `inline` render mode plus `backgroundColor` / `radius` / `appLogo` theming.
