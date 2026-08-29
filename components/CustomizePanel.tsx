@@ -12,9 +12,9 @@ export type ProviderKey = 'email' | 'google' | 'apple';
 const ACCENTS = ['#402AFF', '#7C3AED', '#12B3A6', '#17B85A', '#FA5D3C'];
 
 const PROVIDERS: { key: ProviderKey; label: string; icon: React.ReactNode }[] = [
-  { key: 'email', label: 'Email', icon: <FaEnvelope className="text-ink/70" /> },
+  { key: 'email', label: 'Email', icon: <FaEnvelope className="text-white/70" /> },
   { key: 'google', label: 'Google', icon: <FcGoogle /> },
-  { key: 'apple', label: 'Apple', icon: <FaApple className="text-ink" /> },
+  { key: 'apple', label: 'Apple', icon: <FaApple className="text-white" /> },
 ];
 
 interface Props {
@@ -57,7 +57,9 @@ function Swatch({
       aria-pressed={active}
       data-pressable
       className={`h-7 w-7 rounded-full transition-[box-shadow] duration-150 ${
-        active ? 'ring-2 ring-ink ring-offset-2' : 'ring-1 ring-line-strong hover:ring-ink/40'
+        active
+          ? 'ring-2 ring-white ring-offset-2 ring-offset-brand'
+          : 'ring-1 ring-white/30 hover:ring-white/60'
       }`}
       style={style}
     />
@@ -66,7 +68,7 @@ function Swatch({
 
 function FieldLabel({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-[12.5px] font-medium text-ink">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-[12.5px] font-medium text-white">
       {children}
     </label>
   );
@@ -82,23 +84,23 @@ export function CustomizePanel(p: Props) {
   const isCustomAccent = !ACCENTS.some((c) => c.toLowerCase() === p.accent.toLowerCase());
 
   return (
-    <aside className="bg-white">
-      <div className="border-b border-line px-5 py-4">
-        <h1 className="text-[1.1875rem] font-medium leading-[1.2] tracking-[-0.03em] text-ink">
+    <aside>
+      <div className="border-b border-white/15 px-5 py-4">
+        <h1 className="text-[1.1875rem] font-medium leading-[1.2] tracking-[-0.03em] text-white">
           This is the wallet your users will see.
         </h1>
-        <p className="mt-1 text-[12.5px] leading-snug text-muted">
+        <p className="mt-1 text-[12.5px] leading-snug text-white/65">
           Changes land on the preview. Sign in when it looks like your product.
         </p>
       </div>
 
-      <div className="divide-y divide-line">
+      <div className="divide-y divide-white/15">
         <div className="px-5 py-3">
           <FieldLabel>Chain</FieldLabel>
           <div
             role="radiogroup"
             aria-label="Chain"
-            className="grid grid-cols-3 rounded-md bg-surface p-0.5 ring-1 ring-line-strong"
+            className="grid grid-cols-3 rounded-md bg-black/15 p-0.5 ring-1 ring-white/20"
           >
             {CHAIN_LIST.map((c) => {
               const active = c.key === p.chain;
@@ -112,8 +114,8 @@ export function CustomizePanel(p: Props) {
                   data-pressable
                   className={`flex items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[12.5px] font-medium transition-colors duration-150 ${
                     active
-                      ? 'bg-white text-ink shadow-[0_1px_2px_rgba(10,10,15,0.08)]'
-                      : 'text-muted hover:text-ink'
+                      ? 'bg-white text-brand shadow-[0_1px_2px_rgba(16,8,64,0.18)]'
+                      : 'text-white/65 hover:text-white'
                   }`}
                 >
                   <ChainLogo chain={c.key} size={14} />
@@ -123,7 +125,7 @@ export function CustomizePanel(p: Props) {
               );
             })}
           </div>
-          <p className="mt-2 text-[12px] leading-snug text-muted">
+          <p className="mt-2 text-[12px] leading-snug text-white/55">
             {p.deviceApproval === 'passkey'
               ? 'Passkeys are per chain, so this pick is the whole session.'
               : 'One login, a wallet on every chain. Switch without signing out.'}
@@ -138,22 +140,24 @@ export function CustomizePanel(p: Props) {
             aria-checked={p.deviceApproval === 'enclave'}
             onClick={() => p.setDeviceApproval(p.deviceApproval === 'enclave' ? 'passkey' : 'enclave')}
             data-pressable
-            className="flex w-full items-center justify-between rounded-md border border-line-strong bg-white px-3 py-2.5 text-left"
+            className="flex w-full items-center justify-between rounded-md border border-white/20 bg-white/10 px-3 py-2.5 text-left"
           >
-            <span className="text-[13px] font-medium text-ink">Use the enclave</span>
+            <span className="text-[13px] font-medium text-white">Use the enclave</span>
             <span
               className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200 ${
-                p.deviceApproval === 'enclave' ? 'bg-brand' : 'bg-line-strong'
+                p.deviceApproval === 'enclave' ? 'bg-white' : 'bg-white/25'
               }`}
             >
               <span
-                className={`absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                  p.deviceApproval === 'enclave' ? 'translate-x-[18px]' : 'translate-x-[2px]'
+                className={`absolute top-[2px] h-[18px] w-[18px] rounded-full shadow-sm transition-transform duration-200 ${
+                  p.deviceApproval === 'enclave'
+                    ? 'translate-x-[18px] bg-brand'
+                    : 'translate-x-[2px] bg-white'
                 }`}
               />
             </span>
           </button>
-          <p className="mt-2 text-[12px] leading-snug text-muted">
+          <p className="mt-2 text-[12px] leading-snug text-white/55">
             {p.deviceApproval === 'enclave'
               ? 'Recovery enrolls at sign-in. A new device restores on first transaction.'
               : 'A synced passkey authorizes a new device. One chain per app.'}
@@ -161,11 +165,11 @@ export function CustomizePanel(p: Props) {
         </div>
 
         <div className="px-5 py-3">
-          <p className="mb-2.5 text-[12.5px] font-medium text-ink">Appearance</p>
+          <p className="mb-2.5 text-[12.5px] font-medium text-white">Appearance</p>
 
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <div>
-              <p className="mb-1.5 text-[12px] font-medium text-muted">Background</p>
+              <p className="mb-1.5 text-[12px] font-medium text-white/55">Background</p>
               <div className="flex flex-wrap gap-2">
                 <Swatch
                   label="White"
@@ -189,8 +193,8 @@ export function CustomizePanel(p: Props) {
                   aria-label="Custom background color"
                   className={`relative h-7 w-7 cursor-pointer overflow-hidden rounded-full transition-[box-shadow] duration-150 ${
                     p.background === 'custom'
-                      ? 'ring-2 ring-ink ring-offset-2'
-                      : 'ring-1 ring-line-strong hover:ring-ink/40'
+                      ? 'ring-2 ring-white ring-offset-2 ring-offset-brand'
+                      : 'ring-1 ring-white/30 hover:ring-white/60'
                   }`}
                   style={{
                     background:
@@ -212,7 +216,7 @@ export function CustomizePanel(p: Props) {
               </div>
             </div>
             <div>
-              <p className="mb-1.5 text-[12px] font-medium text-muted">Accent</p>
+              <p className="mb-1.5 text-[12px] font-medium text-white/55">Accent</p>
               <div className="flex flex-wrap items-center gap-2">
                 {ACCENTS.map((c) => (
                   <Swatch
@@ -227,8 +231,8 @@ export function CustomizePanel(p: Props) {
                   aria-label="Custom accent color"
                   className={`relative h-7 w-7 cursor-pointer overflow-hidden rounded-full transition-[box-shadow] duration-150 ${
                     isCustomAccent
-                      ? 'ring-2 ring-ink ring-offset-2'
-                      : 'ring-1 ring-line-strong hover:ring-ink/40'
+                      ? 'ring-2 ring-white ring-offset-2 ring-offset-brand'
+                      : 'ring-1 ring-white/30 hover:ring-white/60'
                   }`}
                   style={{
                     background: isCustomAccent
@@ -249,10 +253,10 @@ export function CustomizePanel(p: Props) {
 
           <div className="mt-3">
             <div className="mb-1.5 flex items-center justify-between">
-              <label htmlFor="corner-radius" className="text-[12px] font-medium text-muted">
+              <label htmlFor="corner-radius" className="text-[12px] font-medium text-white/55">
                 Corner radius
               </label>
-              <span className="font-mono text-[12px] tabular-nums text-ink">{p.radius}px</span>
+              <span className="font-mono text-[12px] tabular-nums text-white">{p.radius}px</span>
             </div>
             <input
               id="corner-radius"
@@ -261,16 +265,16 @@ export function CustomizePanel(p: Props) {
               max={24}
               value={p.radius}
               onChange={(e) => p.setRadius(Number(e.target.value))}
-              className="w-full accent-ink"
+              className="w-full accent-white"
             />
           </div>
         </div>
 
         <div className="px-5 py-3">
-          <p className="text-[12.5px] font-medium text-ink">Branding</p>
+          <p className="text-[12.5px] font-medium text-white">Branding</p>
           <div className="mt-2 grid grid-cols-2 gap-2.5">
             <div>
-              <label htmlFor="app-name" className="mb-1 block text-[12px] font-medium text-muted">
+              <label htmlFor="app-name" className="mb-1 block text-[12px] font-medium text-white/55">
                 App name
               </label>
               <input
@@ -278,11 +282,11 @@ export function CustomizePanel(p: Props) {
                 value={p.appName}
                 onChange={(e) => p.setAppName(e.target.value)}
                 placeholder="Your app"
-                className="w-full rounded-md border border-line-strong bg-white px-2.5 py-1.5 text-[13px] text-ink outline-none transition-colors duration-150 focus:border-ink"
+                className="w-full rounded-md border border-white/20 bg-white/10 px-2.5 py-1.5 text-[13px] text-white outline-none transition-colors duration-150 placeholder:text-white/35 focus:border-white/55"
               />
             </div>
             <div>
-              <label htmlFor="app-logo" className="mb-1 block text-[12px] font-medium text-muted">
+              <label htmlFor="app-logo" className="mb-1 block text-[12px] font-medium text-white/55">
                 Logo URL
               </label>
               <input
@@ -290,15 +294,15 @@ export function CustomizePanel(p: Props) {
                 value={p.appLogo}
                 onChange={(e) => p.setAppLogo(e.target.value)}
                 placeholder="https://"
-                className="w-full truncate rounded-md border border-line-strong bg-white px-2.5 py-1.5 font-mono text-[12px] text-ink outline-none transition-colors duration-150 focus:border-ink"
+                className="w-full truncate rounded-md border border-white/20 bg-white/10 px-2.5 py-1.5 font-mono text-[12px] text-white outline-none transition-colors duration-150 placeholder:text-white/35 focus:border-white/55"
               />
             </div>
           </div>
         </div>
 
         <div className="px-5 py-3">
-          <p className="text-[12.5px] font-medium text-ink">Sign-in methods</p>
-          <div className="mt-2 divide-y divide-line rounded-md border border-line">
+          <p className="text-[12.5px] font-medium text-white">Sign-in methods</p>
+          <div className="mt-2 divide-y divide-white/15 rounded-md border border-white/15">
             {PROVIDERS.map(({ key, label, icon }) => {
               const on = p.providers.includes(key);
               return (
@@ -307,13 +311,13 @@ export function CustomizePanel(p: Props) {
                   type="button"
                   onClick={() => toggleProvider(key)}
                   data-pressable
-                  className="flex w-full items-center gap-2.5 bg-white px-3 py-2 text-left text-[13px] font-medium text-ink first:rounded-t-md last:rounded-b-md hover:bg-surface"
+                  className="flex w-full items-center gap-2.5 bg-white/5 px-3 py-2 text-left text-[13px] font-medium text-white first:rounded-t-md last:rounded-b-md hover:bg-white/10"
                 >
                   <span className="grid h-5 w-5 place-items-center text-[16px]">{icon}</span>
                   <span className="flex-1">{label}</span>
                   <span
                     className={`grid h-[18px] w-[18px] place-items-center rounded-[4px] border transition-colors duration-150 ${
-                      on ? 'border-ink bg-ink text-white' : 'border-line-strong bg-white'
+                      on ? 'border-white bg-white text-brand' : 'border-white/30 bg-transparent'
                     }`}
                     aria-hidden
                   >
@@ -333,7 +337,7 @@ export function CustomizePanel(p: Props) {
               );
             })}
           </div>
-          <p className="mt-2 text-[12px] leading-snug text-muted">
+          <p className="mt-2 text-[12px] leading-snug text-white/55">
             SMS, X, Discord, GitHub and wallets are next.
           </p>
         </div>

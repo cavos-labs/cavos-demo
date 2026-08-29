@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CavosAuthModal, useCavos } from '@cavos/kit/react';
 import { CavosMark } from './CavosMark';
 import { CustomizePanel, type Background, type ProviderKey } from './CustomizePanel';
@@ -92,6 +92,19 @@ export function Demo({
   };
   const isMobile = useIsMobile();
   const [authOpen, setAuthOpen] = useState(false);
+  // Kit's modal owns the post-OAuth screens ("Connecting…", "You're all set").
+  // The demo used to swap it for DevTools the instant `address` landed, so the
+  // return from Google/Apple looked like the modal had just closed.
+  const [authDismissed, setAuthDismissed] = useState(false);
+  const authedRef = useRef(isAuthenticated);
+  authedRef.current = isAuthenticated;
+  useEffect(() => {
+    if (!isAuthenticated) setAuthDismissed(false);
+  }, [isAuthenticated]);
+  const handleAuthClose = useCallback(() => {
+    setAuthOpen(false);
+    if (authedRef.current) setAuthDismissed(true);
+  }, []);
 
   const [background, setBackground] = useState<Background>('white');
   const [customBg, setCustomBg] = useState('#ffffff');
@@ -106,8 +119,12 @@ export function Demo({
       ? { theme: themeForHex(customBg), backgroundColor: customBg }
       : BG_MAP[background];
   const isReady = isAuthenticated && !!address;
+  const showWorkspace = isReady && authDismissed;
 
   const configCode = useMemo(() => {
+    // Configuring every chain means every chain's requirement applies: Starknet
+    // needs the paymaster key, Solana a real RPC (the public devnet endpoint
+    // rejects browser traffic). Stellar needs neither.
     const chainExtras =
       `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',` + `\n    rpcUrl: 'YOUR_SOLANA_RPC',`;
     return `import { CavosProvider } from '@cavos/kit/react';
@@ -150,21 +167,21 @@ export function Demo({
   };
 
   return (
-    <div className="min-h-[100dvh] bg-white">
+    <div className="page-brand min-h-[100dvh]">
       <a
         href="#workspace"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-brand focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-brand"
       >
         Skip to demo
       </a>
 
       <div
-        className={`relative mx-auto max-w-[1280px] border-x border-line ${
-          isMobile && !isReady ? 'pb-24' : ''
+        className={`relative mx-auto max-w-[1280px] border-x border-white/15 ${
+          isMobile && !showWorkspace ? 'pb-24' : ''
         }`}
       >
-        <header className="flex h-14 items-center justify-between gap-6 border-b border-line px-4 md:px-5">
-          <a href="https://cavos.xyz" className="flex items-center gap-2.5 text-ink hover:opacity-70">
+        <header className="flex h-14 items-center justify-between gap-6 border-b border-white/15 px-4 md:px-5">
+          <a href="https://cavos.xyz" className="flex items-center gap-2.5 text-white hover:opacity-80">
             <CavosMark size={20} />
             <span className="text-[15px] font-semibold tracking-tight">Cavos</span>
           </a>
@@ -173,7 +190,7 @@ export function Demo({
               href="https://docs.cavos.xyz"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden px-3 py-2 text-sm font-medium text-ink/60 transition-colors duration-150 hover:text-ink sm:inline"
+              className="hidden px-3 py-2 text-sm font-medium text-white/65 transition-colors duration-150 hover:text-white sm:inline"
             >
               Docs
             </a>
@@ -182,7 +199,7 @@ export function Demo({
               target="_blank"
               rel="noopener noreferrer"
               data-pressable
-              className="inline-flex items-center gap-1.5 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors duration-150 hover:bg-brand-hover"
+              className="inline-flex items-center gap-1.5 rounded-md bg-white px-4 py-2 text-sm font-semibold text-brand transition-colors duration-150 hover:bg-white/90"
             >
               Get started
               <Arrow className="hidden sm:block" />
@@ -192,9 +209,9 @@ export function Demo({
 
         <div
           id="workspace"
-          className="grid lg:h-[calc(100dvh-3.5rem)] lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:divide-x lg:divide-line"
+          className="grid lg:h-[calc(100dvh-3.5rem)] lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] lg:divide-x lg:divide-white/15"
         >
-          <div className="flex min-h-0 flex-col border-b border-line lg:border-b-0">
+          <div className="flex min-h-0 flex-col border-b border-white/15 lg:border-b-0">
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               <CustomizePanel
                 chain={chain}
@@ -217,40 +234,44 @@ export function Demo({
                 setDeviceApproval={switchApproval}
               />
             </div>
-            <div className="shrink-0 border-t border-line bg-white px-5 py-2.5">
+            <div className="shrink-0 border-t border-white/15 px-5 py-2.5">
               <CopyConfigButton code={configCode} variant="panel" />
             </div>
           </div>
 
-          {isReady ? (
-            <section className="relative min-h-0 bg-surface lg:h-full">
-              <div className="dot-grid pointer-events-none absolute inset-0 opacity-[0.35]" />
-              <div className="relative z-10 h-full min-h-[520px] overflow-y-auto lg:min-h-0">
-                <DevTools chain={chain} />
+          {showWorkspace ? (
+            <section className="relative min-h-0 lg:h-full">
+              <div className="dot-grid pointer-events-none absolute inset-0 opacity-40" />
+              <div className="relative z-10 h-full min-h-[520px] p-4 lg:min-h-0 lg:p-5">
+                <div className="sheet-light h-full overflow-hidden rounded-lg bg-white text-ink shadow-[0_24px_60px_rgba(16,8,64,0.28)]">
+                  <div className="h-full overflow-y-auto">
+                    <DevTools chain={chain} />
+                  </div>
+                </div>
               </div>
             </section>
           ) : isMobile ? (
             <CavosAuthModal
-              open={authOpen || walletStatus.needsDeviceApproval}
-              onClose={() => setAuthOpen(false)}
+              open={authOpen || walletStatus.needsDeviceApproval || (isAuthenticated && !authDismissed)}
+              onClose={handleAuthClose}
               {...modalProps}
             />
           ) : (
-            <section className="relative flex min-h-[480px] bg-surface lg:h-full lg:min-h-0">
-              <div className="dot-grid pointer-events-none absolute inset-0 opacity-[0.35]" />
+            <section className="relative flex min-h-[480px] lg:h-full lg:min-h-0">
+              <div className="dot-grid pointer-events-none absolute inset-0 opacity-40" />
               <div className="relative z-10 flex w-full flex-1 items-center justify-center p-5">
                 <div className="w-full max-w-[380px] animate-fadeIn">
-                  <CavosAuthModal inline open onClose={() => {}} {...modalProps} />
+                  <CavosAuthModal inline open onClose={handleAuthClose} {...modalProps} />
                 </div>
               </div>
             </section>
           )}
         </div>
 
-        <section className="border-t border-line bg-brand px-6 py-8 text-white md:px-10">
+        <section className="border-t border-white/15 px-6 py-8 md:px-10">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="max-w-[42ch]">
-              <h2 className="text-[1.25rem] font-medium leading-[1.2] tracking-[-0.03em]">
+              <h2 className="text-[1.25rem] font-medium leading-[1.2] tracking-[-0.03em] text-white">
                 Take this config with you.
               </h2>
               <p className="mt-1.5 text-[13px] leading-snug text-white/70">
@@ -266,13 +287,13 @@ export function Demo({
         </section>
       </div>
 
-      {isMobile && !isReady && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/90 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:hidden">
+      {isMobile && !showWorkspace && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/15 bg-brand/90 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:hidden">
           <button
             type="button"
             onClick={() => setAuthOpen(true)}
             data-pressable
-            className="inline-flex w-full items-center justify-center rounded-md bg-brand px-5 py-3.5 text-[15px] font-semibold text-white transition-colors duration-150 hover:bg-brand-hover"
+            className="inline-flex w-full items-center justify-center rounded-md bg-white px-5 py-3.5 text-[15px] font-semibold text-brand transition-colors duration-150 hover:bg-white/90"
           >
             Launch login
           </button>
@@ -301,7 +322,7 @@ function CopyConfigButton({
       data-pressable
       className={
         variant === 'panel'
-          ? 'inline-flex w-full items-center justify-center rounded-md border border-line-strong bg-white px-4 py-2 text-[13px] font-semibold text-ink transition-colors duration-150 hover:border-ink/40'
+          ? 'inline-flex w-full items-center justify-center rounded-md border border-white/25 bg-white/10 px-4 py-2 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-white/15'
           : 'inline-flex shrink-0 items-center justify-center rounded-md bg-white px-5 py-2.5 text-sm font-semibold text-brand transition-colors duration-150 hover:bg-white/90'
       }
     >

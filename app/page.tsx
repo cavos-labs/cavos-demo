@@ -89,15 +89,15 @@ export default function Page() {
 
   if (!settingsRead) {
     return (
-      <div className="min-h-[100dvh] bg-white">
-        <div className="mx-auto min-h-[100dvh] max-w-[1280px] border-x border-line">
-          <div className="h-14 border-b border-line" />
-          <div className="grid h-[calc(100dvh-3.5rem)] grid-cols-[minmax(300px,380px)_minmax(0,1fr)] divide-x divide-line">
+      <div className="page-brand min-h-[100dvh]">
+        <div className="mx-auto min-h-[100dvh] max-w-[1280px] border-x border-white/15">
+          <div className="h-14 border-b border-white/15" />
+          <div className="grid h-[calc(100dvh-3.5rem)] grid-cols-[minmax(300px,380px)_minmax(0,1fr)] divide-x divide-white/15">
             <div className="space-y-3 p-5">
-              <div className="h-5 w-56 animate-pulse rounded-md bg-surface" />
-              <div className="h-3 w-40 animate-pulse rounded-md bg-surface" />
+              <div className="h-5 w-56 animate-pulse rounded-md bg-white/15" />
+              <div className="h-3 w-40 animate-pulse rounded-md bg-white/10" />
             </div>
-            <div className="animate-pulse bg-surface" />
+            <div className="animate-pulse bg-white/5" />
           </div>
         </div>
       </div>
