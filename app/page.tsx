@@ -56,10 +56,9 @@ export default function Page() {
       chains: deviceApproval === 'passkey' ? [passkeyChain] : ['starknet', 'solana', 'stellar'],
       network: 'testnet',
       // Names this app's device-key slot, so it is stable forever: changing it
-      // makes every returning user's device unknown to their wallet. The
-      // -kit22-* values it went through were deliberate resets while the
-      // address model was still moving.
-      appSalt: 'cavos-demo',
+      // makes every returning user's device unknown to their wallet. v4 is a
+      // fresh-account reset after the kit 0.1.11 / indigo playground cut.
+      appSalt: 'cavos-demo-v4',
       socialRecovery: true,
       deviceApproval,
       // Per chain, not one for all: a single `rpcUrl` reaches every chain, so
