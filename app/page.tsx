@@ -9,8 +9,12 @@ import type { DeviceApproval } from '@/lib/deviceApproval';
 import {
   loadDeviceApproval,
   loadPasskeyChain,
+  loadSelectedChains,
+  loadViewChain,
   storeDeviceApproval,
   storePasskeyChain,
+  storeSelectedChains,
+  storeViewChain,
 } from '@/lib/deviceApproval';
 
 const APP_ID = process.env.NEXT_PUBLIC_CAVOS_APP_ID ?? '';
@@ -28,11 +32,11 @@ export default function Page() {
   // another on the client, and React discards the tree.
   const [deviceApproval, setDeviceApproval] = useState<DeviceApproval>('enclave');
 
-  // Which chain a passkey app runs on. The kit refuses passkey approval for a
-  // multichain app, because a passkey is registered per chain and the others
-  // would have no way to authorize a new device at all — so here the choice
-  // becomes the whole session rather than a view of it.
-  const [passkeyChain, setPasskeyChain] = useState<Chain>('starknet');
+  // Which chains the session configures, and which one is in view. Not all
+  // three: Stellar cannot share a session with the enclave chains, and a
+  // passkey is one chain. Checking Stellar drops the others.
+  const [viewChain, setViewChain] = useState<Chain>('starknet');
+  const [selectedChains, setSelectedChains] = useState<Chain[]>(['starknet']);
 
   // Both are read after mount, because the server has no localStorage and
   // seeding state from it renders one thing there and another here. Nothing is
@@ -41,33 +45,71 @@ export default function Page() {
   // in the middle of the OAuth callback it was busy consuming.
   const [settingsRead, setSettingsRead] = useState(false);
   useEffect(() => {
-    setDeviceApproval(loadDeviceApproval());
-    setPasskeyChain(loadPasskeyChain());
+    const chains = loadSelectedChains();
+    setSelectedChains(chains);
+    const view = chains.includes(loadViewChain()) ? loadViewChain() : chains[0];
+    setViewChain(view);
+    if (chains.length === 1) {
+      storePasskeyChain(chains[0] as ReturnType<typeof loadPasskeyChain>);
+    }
+    // Stellar has no enclave. More than one chain has no passkey. Force the
+    // method that the kit will actually accept, so a stored toggle cannot
+    // throw on first render after OAuth.
+    if (chains.includes('stellar')) {
+      storeDeviceApproval('passkey');
+      setDeviceApproval('passkey');
+    } else if (chains.length > 1) {
+      storeDeviceApproval('enclave');
+      setDeviceApproval('enclave');
+    } else {
+      setDeviceApproval(loadDeviceApproval());
+    }
     setSettingsRead(true);
   }, []);
-  const choosePasskeyChain = (next: Chain) => {
-    storePasskeyChain(next as ReturnType<typeof loadPasskeyChain>);
-    setPasskeyChain(next);
+  const chooseSelectedChains = (next: Chain[]) => {
+    storeSelectedChains(next);
+    setSelectedChains(next);
+    const view = next.includes(viewChain) ? viewChain : next[0];
+    storeViewChain(view as ReturnType<typeof loadViewChain>);
+    setViewChain(view);
+    if (next.length === 1) {
+      storePasskeyChain(next[0] as ReturnType<typeof loadPasskeyChain>);
+    }
+    if (next.includes('stellar')) {
+      storeDeviceApproval('passkey');
+      setDeviceApproval('passkey');
+    } else if (next.length > 1) {
+      storeDeviceApproval('enclave');
+      setDeviceApproval('enclave');
+    }
   };
+
+  const includesStellar = selectedChains.includes('stellar');
+  const deviceApprovalForSession: DeviceApproval = includesStellar
+    ? 'passkey'
+    : selectedChains.length > 1
+      ? 'enclave'
+      : deviceApproval;
 
   const config = useMemo<CavosConfig>(
     () => ({
       appId: APP_ID,
-      chains: deviceApproval === 'passkey' ? [passkeyChain] : ['starknet', 'solana', 'stellar'],
+      chains: selectedChains,
+      defaultChain: selectedChains.includes(viewChain) ? viewChain : selectedChains[0],
       network: 'testnet',
       // Names this app's device-key slot, so it is stable forever: changing it
-      // makes every returning user's device unknown to their wallet. v4 is a
-      // fresh-account reset after the kit 0.1.11 / indigo playground cut.
-      appSalt: 'cavos-demo-v4',
-      socialRecovery: true,
-      deviceApproval,
+      // makes every returning user's device unknown to their wallet. v5 is a
+      // fresh-account reset for per-device Stellar signers (kit 0.1.13).
+      appSalt: 'cavos-demo-v5',
+      socialRecovery: deviceApprovalForSession === 'enclave',
+      deviceApproval: deviceApprovalForSession,
       // Per chain, not one for all: a single `rpcUrl` reaches every chain, so
       // the Solana node ends up answering Starknet's calls with "Method not
       // found".
-      rpcUrls: { solana: SOLANA_RPC },
-      paymasterApiKey: STARKNET_PAYMASTER,
+      rpcUrls: selectedChains.includes('solana') ? { solana: SOLANA_RPC } : undefined,
+      paymasterApiKey: selectedChains.includes('starknet') ? STARKNET_PAYMASTER : undefined,
     }),
-    [deviceApproval, passkeyChain],
+    [deviceApprovalForSession, selectedChains, viewChain],
   );
 
   const chooseDeviceApproval = (next: DeviceApproval) => {
@@ -84,7 +126,7 @@ export default function Page() {
   // session single-chain, and without this the old three-chain session stayed,
   // showing Stellar while acting on Starknet. Switching the active chain within
   // a multichain session still remounts nothing.
-  const sessionKey = deviceApproval === 'passkey' ? `passkey:${passkeyChain}` : 'enclave';
+  const sessionKey = `${deviceApprovalForSession}:${selectedChains.join(',')}`;
 
   if (!settingsRead) {
     return (
@@ -106,10 +148,11 @@ export default function Page() {
   return (
     <CavosProvider key={sessionKey} config={config}>
       <Demo
-        deviceApproval={deviceApproval}
+        deviceApproval={deviceApprovalForSession}
         setDeviceApproval={chooseDeviceApproval}
-        passkeyChain={passkeyChain}
-        setPasskeyChain={choosePasskeyChain}
+        viewChain={viewChain}
+        selectedChains={selectedChains}
+        setSelectedChains={chooseSelectedChains}
       />
     </CavosProvider>
   );

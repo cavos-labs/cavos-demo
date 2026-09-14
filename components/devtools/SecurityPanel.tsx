@@ -5,8 +5,8 @@ import { useCavos } from '@cavos/kit/react';
 import { Shield, Fingerprint, KeyRound, Copy, Check, AlertCircle, Users } from 'lucide-react';
 
 /**
- * Security: passkey enrollment, recovery code setup, and social recovery. All
- * three come from `useCavos()` and work across the three chains.
+ * Security: passkey enrollment, recovery code setup, and (on Starknet and
+ * Solana) social recovery. Classic Stellar uses passkey or recovery code.
  */
 /** Coarse "2h 5m" / "5m" / "40s" rendering of a countdown in seconds. */
 function formatDelay(seconds: number): string {
@@ -20,7 +20,7 @@ function formatDelay(seconds: number): string {
 }
 
 export function SecurityPanel() {
-  const { walletStatus, enrollPasskeyDefault, setupRecovery, passkeySupported } = useCavos();
+  const { walletStatus, enrollPasskeyDefault, setupRecovery, passkeySupported, chain } = useCavos();
 
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyError, setPasskeyError] = useState('');
@@ -175,7 +175,9 @@ export function SecurityPanel() {
         {/* Social recovery — enrolls itself on social login when the app has
             `socialRecovery: true` and the dashboard enables it, so there is
             nothing to click here. This row just surfaces the state the kit
-            reports: enrolling, waiting on the on-chain timelock, or armed. */}
+            reports: enrolling, waiting on the on-chain timelock, or armed.
+            Classic Stellar does not use the enclave. */}
+        {chain !== 'stellar' && (
         <div className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2.5">
           <div className="flex items-center gap-2.5">
             <Users size={16} className="text-ink" />
@@ -200,6 +202,7 @@ export function SecurityPanel() {
             </span>
           )}
         </div>
+        )}
       </div>
     </div>
   );

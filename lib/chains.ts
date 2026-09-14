@@ -76,7 +76,7 @@ export const CHAINS: Record<Chain, ChainMeta> = {
   },
 };
 
-export const CHAIN_LIST = [CHAINS.solana, CHAINS.stellar, CHAINS.starknet];
+export const CHAIN_LIST = [CHAINS.starknet, CHAINS.solana, CHAINS.stellar];
 
 /** Format a base-unit bigint amount as a human-readable string. */
 export function formatNative(amount: bigint, decimals: number, maxFraction = 4): string {

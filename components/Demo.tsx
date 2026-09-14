@@ -59,37 +59,36 @@ function Arrow({ className = '' }: { className?: string }) {
 export function Demo({
   deviceApproval,
   setDeviceApproval,
-  passkeyChain,
-  setPasskeyChain,
+  viewChain,
+  selectedChains,
+  setSelectedChains,
 }: {
   deviceApproval: DeviceApproval;
   setDeviceApproval: (v: DeviceApproval) => void;
-  passkeyChain: Chain;
-  setPasskeyChain: (c: Chain) => void;
+  viewChain: Chain;
+  selectedChains: Chain[];
+  setSelectedChains: (c: Chain[]) => void;
 }) {
-  const { walletStatus, chain: sessionChain, setChain: setSessionChain, isAuthenticated, address, logout } =
-    useCavos();
+  const { walletStatus, chain: sessionChain, isAuthenticated, address, logout } = useCavos();
 
   const switchApproval = (next: DeviceApproval) => {
     if (next === deviceApproval) return;
     logout();
     setDeviceApproval(next);
   };
-  const switchPasskeyChain = (next: Chain) => {
-    if (next === passkeyChain) return;
+  const switchSelectedChains = (next: Chain[]) => {
+    const same =
+      next.length === selectedChains.length && next.every((c) => selectedChains.includes(c));
+    if (same) return;
     logout();
-    setPasskeyChain(next);
+    setSelectedChains(next);
   };
-  const [previewChain, setPreviewChain] = useState<Chain>('starknet');
-  const chain = deviceApproval === 'passkey' ? passkeyChain : isAuthenticated ? sessionChain : previewChain;
-  const setChain = (next: Chain) => {
-    if (deviceApproval === 'passkey') {
-      switchPasskeyChain(next);
-      return;
-    }
-    setPreviewChain(next);
-    if (isAuthenticated) setSessionChain(next);
-  };
+  const chain =
+    isAuthenticated && selectedChains.includes(sessionChain)
+      ? sessionChain
+      : selectedChains.includes(viewChain)
+        ? viewChain
+        : selectedChains[0];
   const isMobile = useIsMobile();
   const [authOpen, setAuthOpen] = useState(false);
   // Kit's modal owns the post-OAuth screens ("Connecting…", "You're all set").
@@ -122,21 +121,21 @@ export function Demo({
   const showWorkspace = isReady && authDismissed;
 
   const configCode = useMemo(() => {
-    // Configuring every chain means every chain's requirement applies: Starknet
-    // needs the paymaster key, Solana a real RPC (the public devnet endpoint
-    // rejects browser traffic). Stellar needs neither.
-    const chainExtras =
-      `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',` + `\n    rpcUrl: 'YOUR_SOLANA_RPC',`;
+    const extras = [
+      selectedChains.includes('starknet') ? `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',` : '',
+      selectedChains.includes('solana') ? `\n    rpcUrl: 'YOUR_SOLANA_RPC',` : '',
+    ].join('');
+    const listed = selectedChains.map((c) => `'${c}'`).join(', ');
     return `import { CavosProvider } from '@cavos/kit/react';
 
 <CavosProvider
   config={{
     appId: 'YOUR_APP_ID',
-    chains: ${deviceApproval === 'passkey' ? `['${chain}']` : "['starknet', 'solana', 'stellar']"},
+    chains: [${listed}],
     network: 'testnet',
     appSalt: 'my-app',
     socialRecovery: ${deviceApproval === 'enclave'},
-    deviceApproval: '${deviceApproval}',${chainExtras}
+    deviceApproval: '${deviceApproval}',${extras}
   }}
   modal={{
     appName: '${appName}',
@@ -151,7 +150,7 @@ export function Demo({
 >
   <App />
 </CavosProvider>`;
-  }, [chain, appName, theme, accent, background, backgroundColor, radius, providers, deviceApproval]);
+  }, [selectedChains, appName, theme, accent, background, backgroundColor, radius, providers, deviceApproval]);
 
   const modalProps = {
     appName: appName || undefined,
@@ -214,8 +213,8 @@ export function Demo({
           <div className="flex min-h-0 flex-col border-b border-white/15 lg:border-b-0">
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
               <CustomizePanel
-                chain={chain}
-                setChain={setChain}
+                selectedChains={selectedChains}
+                setSelectedChains={switchSelectedChains}
                 background={background}
                 setBackground={setBackground}
                 customBg={customBg}

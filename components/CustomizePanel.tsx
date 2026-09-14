@@ -4,6 +4,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { FaApple, FaEnvelope } from 'react-icons/fa6';
 import { CHAIN_LIST, type Chain } from '@/lib/chains';
 import type { DeviceApproval } from '@/lib/deviceApproval';
+import { toggleSelectedChain } from '@/lib/deviceApproval';
 import { ChainLogo } from './ChainLogo';
 
 export type Background = 'white' | 'dark' | 'soft' | 'custom';
@@ -18,8 +19,8 @@ const PROVIDERS: { key: ProviderKey; label: string; icon: React.ReactNode }[] = 
 ];
 
 interface Props {
-  chain: Chain;
-  setChain: (c: Chain) => void;
+  selectedChains: Chain[];
+  setSelectedChains: (c: Chain[]) => void;
   background: Background;
   setBackground: (b: Background) => void;
   customBg: string;
@@ -82,6 +83,8 @@ export function CustomizePanel(p: Props) {
   };
 
   const isCustomAccent = !ACCENTS.some((c) => c.toLowerCase() === p.accent.toLowerCase());
+  const enclaveLocked = p.selectedChains.length > 1;
+  const enclaveOn = p.deviceApproval === 'enclave';
 
   return (
     <aside>
@@ -96,73 +99,86 @@ export function CustomizePanel(p: Props) {
 
       <div className="divide-y divide-white/15">
         <div className="px-5 py-3">
-          <FieldLabel>Chain</FieldLabel>
-          <div
-            role="radiogroup"
-            aria-label="Chain"
-            className="grid grid-cols-3 rounded-md bg-black/15 p-0.5 ring-1 ring-white/20"
-          >
+          <p className="text-[12.5px] font-medium text-white">Chains</p>
+          <div className="mt-2 divide-y divide-white/15 rounded-md border border-white/15">
             {CHAIN_LIST.map((c) => {
-              const active = c.key === p.chain;
+              const on = p.selectedChains.includes(c.key);
               return (
                 <button
                   key={c.key}
                   type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => p.setChain(c.key)}
+                  onClick={() => p.setSelectedChains(toggleSelectedChain(p.selectedChains, c.key))}
+                  aria-pressed={on}
                   data-pressable
-                  className={`flex items-center justify-center gap-1.5 rounded-[5px] px-2 py-2 text-[12.5px] font-medium transition-colors duration-150 ${
-                    active
-                      ? 'bg-white text-brand shadow-[0_1px_2px_rgba(16,8,64,0.18)]'
-                      : 'text-white/65 hover:text-white'
-                  }`}
+                  className="flex w-full items-center gap-2.5 bg-white/5 px-3 py-2 text-left text-[13px] font-medium text-white first:rounded-t-md last:rounded-b-md hover:bg-white/10"
                 >
-                  <ChainLogo chain={c.key} size={14} />
-                  <span className="hidden sm:inline">{c.label}</span>
-                  <span className="sm:hidden">{c.symbol}</span>
+                  <ChainLogo chain={c.key} size={16} />
+                  <span className="flex-1">{c.label}</span>
+                  <span
+                    className={`grid h-[18px] w-[18px] place-items-center rounded-[4px] border transition-colors duration-150 ${
+                      on ? 'border-white bg-white text-brand' : 'border-white/30 bg-transparent'
+                    }`}
+                    aria-hidden
+                  >
+                    {on && (
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M4 12.5 9.5 18 20 6.5"
+                          stroke="currentColor"
+                          strokeWidth="2.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </span>
                 </button>
               );
             })}
           </div>
           <p className="mt-2 text-[12px] leading-snug text-white/55">
-            {p.deviceApproval === 'passkey'
-              ? 'Passkeys are per chain, so this pick is the whole session.'
-              : 'One login, a wallet on every chain. Switch without signing out.'}
+            {p.selectedChains.includes('stellar')
+              ? 'Classic Stellar is its own session. A new device uses a passkey or recovery code.'
+              : 'Pick the chains this app configures. Stellar cannot share a session with the others.'}
           </p>
         </div>
 
-        <div className="px-5 py-3">
-          <FieldLabel>Recovery</FieldLabel>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={p.deviceApproval === 'enclave'}
-            onClick={() => p.setDeviceApproval(p.deviceApproval === 'enclave' ? 'passkey' : 'enclave')}
-            data-pressable
-            className="flex w-full items-center justify-between rounded-md border border-white/20 bg-white/10 px-3 py-2.5 text-left"
-          >
-            <span className="text-[13px] font-medium text-white">Use the enclave</span>
-            <span
-              className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200 ${
-                p.deviceApproval === 'enclave' ? 'bg-white' : 'bg-white/25'
+        {!p.selectedChains.includes('stellar') && (
+          <div className="px-5 py-3">
+            <FieldLabel>Recovery</FieldLabel>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={enclaveOn}
+              disabled={enclaveLocked}
+              onClick={() => p.setDeviceApproval(enclaveOn ? 'passkey' : 'enclave')}
+              {...(enclaveLocked ? {} : { 'data-pressable': true })}
+              className={`flex w-full items-center justify-between rounded-md border border-white/20 bg-white/10 px-3 py-2.5 text-left ${
+                enclaveLocked ? 'cursor-not-allowed opacity-55' : ''
               }`}
             >
+              <span className="text-[13px] font-medium text-white">Use the enclave</span>
               <span
-                className={`absolute top-[2px] h-[18px] w-[18px] rounded-full shadow-sm transition-transform duration-200 ${
-                  p.deviceApproval === 'enclave'
-                    ? 'translate-x-[18px] bg-brand'
-                    : 'translate-x-[2px] bg-white'
+                className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200 ${
+                  enclaveOn ? 'bg-white' : 'bg-white/25'
                 }`}
-              />
-            </span>
-          </button>
-          <p className="mt-2 text-[12px] leading-snug text-white/55">
-            {p.deviceApproval === 'enclave'
-              ? 'Recovery enrolls at sign-in. A new device restores on first transaction.'
-              : 'A synced passkey authorizes a new device. One chain per app.'}
-          </p>
-        </div>
+              >
+                <span
+                  className={`absolute top-[2px] h-[18px] w-[18px] rounded-full shadow-sm transition-transform duration-200 ${
+                    enclaveOn ? 'translate-x-[18px] bg-brand' : 'translate-x-[2px] bg-white'
+                  }`}
+                />
+              </span>
+            </button>
+            <p className="mt-2 text-[12px] leading-snug text-white/55">
+              {enclaveLocked
+                ? 'Required when more than one chain is selected.'
+                : enclaveOn
+                  ? 'Recovery enrolls at sign-in. A new device restores on first transaction.'
+                  : 'A synced passkey authorizes a new device. One chain per app.'}
+            </p>
+          </div>
+        )}
 
         <div className="px-5 py-3">
           <p className="mb-2.5 text-[12.5px] font-medium text-white">Appearance</p>
