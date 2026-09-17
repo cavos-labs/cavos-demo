@@ -5,7 +5,9 @@ import { useCavos } from '@cavos/kit/react';
 import { RefreshCw, ArrowDownToLine, Check, ExternalLink } from 'lucide-react';
 import { PublicKey } from '@solana/web3.js';
 import { CHAINS, formatNative, type Chain } from '@/lib/chains';
-import { CvWallet } from '../CavosIcons';
+import type { StellarBootstrapHandle } from '@/lib/stellar/bootstrap';
+import { Section } from './BalanceSection';
+import { StellarBalancePanel } from './StellarBalancePanel';
 
 // Structural shapes for the chain-specific wallet members we use. The kit's
 // wallet classes aren't exported from the React entry, so we narrow by the
@@ -20,7 +22,6 @@ type SolanaWallet = {
     requestAirdrop: (a: PublicKey, l: number) => Promise<string>;
   };
 };
-type StellarWallet = { chain: 'stellar'; balance: () => Promise<bigint> };
 /** Starknet's balance is an ERC-20 read, done through the wallet's provider. */
 type StarknetWallet = {
   chain: 'starknet';
@@ -32,26 +33,31 @@ type StarknetWallet = {
 function asSolana(w: unknown): SolanaWallet {
   return w as SolanaWallet;
 }
-function asStellar(w: unknown): StellarWallet {
-  return w as StellarWallet;
-}
 function asStarknet(w: unknown): StarknetWallet {
   return w as StarknetWallet;
 }
 
 interface Props {
   chain: Chain;
+  stellar?: StellarBootstrapHandle;
 }
 
 /**
  * Native balance + testnet faucet.
  *
- * Solana and Stellar have a true native asset and a programmatic faucet
- * (airdrop / friendbot). Starknet's fee token is an ERC-20, so its balance is a
- * `balanceOf` call and its faucet is a captcha-gated web page — a link, not a
- * button.
+ * Solana has a true native asset and a programmatic faucet (airdrop).
+ * Starknet's fee token is an ERC-20, so its balance is a `balanceOf` call and
+ * its faucet is a captcha-gated web page — a link, not a button. Stellar is
+ * delegated to StellarBalancePanel, which owns the claimable-balance state.
  */
-export function BalancePanel({ chain }: Props) {
+export function BalancePanel({ chain, stellar }: Props) {
+  if (chain === 'stellar' && stellar) {
+    return <StellarBalancePanel chain="stellar" bootstrap={stellar} />;
+  }
+  return <NativeBalancePanel chain={chain} />;
+}
+
+function NativeBalancePanel({ chain }: { chain: Chain }) {
   const { wallet, address } = useCavos();
   const meta = CHAINS[chain];
 
@@ -70,9 +76,6 @@ export function BalancePanel({ chain }: Props) {
       if (chain === 'solana') {
         const lamports = await asSolana(wallet).connection.getBalance(new PublicKey(address));
         setBalance(BigInt(lamports));
-      } else if (chain === 'stellar') {
-        const stroops = await asStellar(wallet).balance();
-        setBalance(stroops);
       } else if (chain === 'starknet' && meta.feeToken) {
         // balanceOf returns a u256 as [low, high].
         const [low, high] = await asStarknet(wallet).account.callContract({
@@ -112,13 +115,6 @@ export function BalancePanel({ chain }: Props) {
         setFaucetState('done');
         setFaucetMsg('1 SOL requested');
         await new Promise((r) => setTimeout(r, 4000));
-        refresh();
-      } else if (chain === 'stellar') {
-        const res = await fetch(`https://friendbot.stellar.org?addr=${encodeURIComponent(address)}`);
-        if (!res.ok) throw new Error('Friendbot failed');
-        setFaucetState('done');
-        setFaucetMsg('10,000 XLM funded');
-        await new Promise((r) => setTimeout(r, 2000));
         refresh();
       }
     } catch {
@@ -210,17 +206,5 @@ export function BalancePanel({ chain }: Props) {
         </div>
       )}
     </Section>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="mb-2 flex items-center gap-2">
-        <CvWallet size={20} />
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted">{title}</p>
-      </div>
-      {children}
-    </div>
   );
 }

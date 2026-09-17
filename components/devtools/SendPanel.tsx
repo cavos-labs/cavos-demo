@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCavos } from '@cavos/kit/react';
 import { Send, ExternalLink, Check } from 'lucide-react';
 import { CHAINS, parseNative, type Chain } from '@/lib/chains';
+import type { StellarBootstrapHandle } from '@/lib/stellar/bootstrap';
 import { CvBolt } from '../CavosIcons';
 
 // Minimal shapes for the two `execute` signatures. The kit's wallet classes
@@ -31,6 +32,7 @@ function u256(value: bigint): [string, string] {
 
 interface Props {
   chain: Chain;
+  stellar?: StellarBootstrapHandle;
 }
 
 /**
@@ -41,9 +43,12 @@ interface Props {
  * ordinary `transfer` call, which is also the honest demonstration of the
  * account: an arbitrary contract call, signed by the device, gas sponsored.
  */
-export function SendPanel({ chain }: Props) {
+export function SendPanel({ chain, stellar }: Props) {
   const { wallet, address } = useCavos();
   const meta = CHAINS[chain];
+  // A send from an account that does not exist would lazily create it empty,
+  // without the waiting USDC — so anything but `active` locks the form.
+  const stellarLocked = chain === 'stellar' && stellar ? stellar.state.kind !== 'active' : false;
 
   const [destination, setDestination] = useState('');
   const [amount, setAmount] = useState('');
@@ -69,7 +74,7 @@ export function SendPanel({ chain }: Props) {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!wallet) return;
+    if (!wallet || stellarLocked) return;
     reset();
 
     const dest = destination.trim();
@@ -110,6 +115,7 @@ export function SendPanel({ chain }: Props) {
           <label className="mb-1 block text-[11.5px] font-medium text-muted">Destination</label>
           <input
             value={destination}
+            disabled={stellarLocked}
             onChange={(e) => {
               setDestination(e.target.value);
               if (status !== 'idle') reset();
@@ -123,6 +129,7 @@ export function SendPanel({ chain }: Props) {
           <div className="flex items-center gap-2">
             <input
               value={amount}
+              disabled={stellarLocked}
               onChange={(e) => {
                 setAmount(e.target.value);
                 if (status !== 'idle') reset();
@@ -137,7 +144,7 @@ export function SendPanel({ chain }: Props) {
 
         <button
           type="submit"
-          disabled={status === 'sending' || !wallet}
+          disabled={status === 'sending' || !wallet || stellarLocked}
           className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-4 py-2.5 text-[13px] font-semibold text-white transition-all hover:bg-brand-hover active:scale-[0.99] disabled:opacity-60"
         >
           <Send size={14} />
@@ -165,9 +172,17 @@ export function SendPanel({ chain }: Props) {
         )}
       </form>
 
-      {address && (
+      {address && stellarLocked && (
         <p className="mt-2 text-[11px] text-muted">
- Tip: send to yourself at your own address above to test the round-trip.
+          Activate the account first — a send from an account that does not exist would create it
+          empty, without the USDC.
+        </p>
+      )}
+      {address && !stellarLocked && (
+        <p className="mt-2 text-[11px] text-muted">
+          {chain === 'stellar' && stellar?.state.kind === 'active' && stellar.state.xlm === 0n
+            ? 'This account holds 0 XLM (Reserve paid its reserves in USDC), so a native send will fail until it receives XLM.'
+            : 'Tip: send to yourself at your own address above to test the round-trip.'}
         </p>
       )}
     </Section>
