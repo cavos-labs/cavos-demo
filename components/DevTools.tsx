@@ -7,6 +7,7 @@ import { SendPanel } from './devtools/SendPanel';
 import { SignPanel } from './devtools/SignPanel';
 import { SecurityPanel } from './devtools/SecurityPanel';
 import { CHAINS, type Chain } from '@/lib/chains';
+import { useStellarBootstrap } from '@/lib/stellar/bootstrap';
 
 function shorten(s: string, lead = 6, tail = 6) {
   return s && s.length > lead + tail ? `${s.slice(0, lead)}…${s.slice(-tail)}` : s;
@@ -15,6 +16,7 @@ function shorten(s: string, lead = 6, tail = 6) {
 export function DevTools({ chain }: { chain: Chain }) {
   const { address, user, logout, session, configuredChains, setChain } = useCavos();
   const meta = CHAINS[chain];
+  const stellar = useStellarBootstrap(address ?? null, chain === 'stellar');
 
   const wallets = (configuredChains ?? [chain]).map((c) => ({
     chain: c,
@@ -101,10 +103,10 @@ export function DevTools({ chain }: { chain: Chain }) {
 
         <div className="divide-y divide-line">
           <div className="px-5 py-4">
-            <BalancePanel chain={chain} />
+            <BalancePanel chain={chain} stellar={stellar} />
           </div>
           <div className="px-5 py-4">
-            <SendPanel chain={chain} />
+            <SendPanel chain={chain} stellar={stellar} />
           </div>
           <div className="px-5 py-4">
             <SignPanel chain={chain} />
