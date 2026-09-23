@@ -129,19 +129,15 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
             <div className="leading-tight">
               <p className="text-[13px] font-medium text-ink">Passkey</p>
               <p className="text-[11px] text-muted">
-                {hasPasskey
-                  ? 'Enabled — the app asked for it after sign-in'
-                  : walletStatus.needsDeviceApproval
-                    ? 'Restore this device when you are ready'
-                    : 'Add one when you want — not during login'}
+                {walletStatus.needsDeviceApproval
+                  ? 'This device still needs the passkey that wraps the key'
+                  : hasPasskey
+                    ? 'Enabled — a new device opens the same key with it'
+                    : 'Add one when you want. Creating the account does not ask'}
               </p>
             </div>
           </div>
-          {hasPasskey ? (
-            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600">
-              <Check size={13} /> On
-            </span>
-          ) : (
+          {walletStatus.needsDeviceApproval || !hasPasskey ? (
             <button
               onClick={handlePasskey}
               disabled={passkeyBusy || !passkeySupported}
@@ -156,6 +152,10 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
                   ? 'Restore'
                   : 'Enable'}
             </button>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600">
+              <Check size={13} /> On
+            </span>
           )}
         </div>
         ) : null}
