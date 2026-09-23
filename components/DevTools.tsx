@@ -7,13 +7,14 @@ import { SendPanel } from './devtools/SendPanel';
 import { SignPanel } from './devtools/SignPanel';
 import { SecurityPanel } from './devtools/SecurityPanel';
 import { CHAINS, type Chain } from '@/lib/chains';
+import type { DeviceApproval } from '@/lib/deviceApproval';
 import { useStellarBootstrap } from '@/lib/stellar/bootstrap';
 
 function shorten(s: string, lead = 6, tail = 6) {
   return s && s.length > lead + tail ? `${s.slice(0, lead)}…${s.slice(-tail)}` : s;
 }
 
-export function DevTools({ chain }: { chain: Chain }) {
+export function DevTools({ chain, deviceApproval }: { chain: Chain; deviceApproval: DeviceApproval }) {
   const { address, user, logout, session, configuredChains, setChain } = useCavos();
   const meta = CHAINS[chain];
   const stellar = useStellarBootstrap(address ?? null, chain === 'stellar');
@@ -97,7 +98,7 @@ export function DevTools({ chain }: { chain: Chain }) {
             )}
           </div>
           <div className="px-5 py-4">
-            <SecurityPanel />
+            <SecurityPanel deviceApproval={deviceApproval} />
           </div>
         </div>
 

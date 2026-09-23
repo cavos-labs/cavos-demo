@@ -137,48 +137,44 @@ export function CustomizePanel(p: Props) {
             })}
           </div>
           <p className="mt-2 text-[12px] leading-snug text-white/55">
-            {p.selectedChains.includes('stellar')
-              ? 'Classic Stellar is its own session. A new device uses a passkey or recovery code.'
-              : 'Pick the chains this app configures. Stellar cannot share a session with the others.'}
+            Pick the chains this app configures. More than one uses the enclave.
           </p>
         </div>
 
-        {!p.selectedChains.includes('stellar') && (
-          <div className="px-5 py-3">
-            <FieldLabel>Recovery</FieldLabel>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={enclaveOn}
-              disabled={enclaveLocked}
-              onClick={() => p.setDeviceApproval(enclaveOn ? 'passkey' : 'enclave')}
-              {...(enclaveLocked ? {} : { 'data-pressable': true })}
-              className={`flex w-full items-center justify-between rounded-md border border-white/20 bg-white/10 px-3 py-2.5 text-left ${
-                enclaveLocked ? 'cursor-not-allowed opacity-55' : ''
+        <div className="px-5 py-3">
+          <FieldLabel>Recovery</FieldLabel>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={enclaveOn}
+            disabled={enclaveLocked}
+            onClick={() => p.setDeviceApproval(enclaveOn ? 'passkey' : 'enclave')}
+            {...(enclaveLocked ? {} : { 'data-pressable': true })}
+            className={`flex w-full items-center justify-between rounded-md border border-white/20 bg-white/10 px-3 py-2.5 text-left ${
+              enclaveLocked ? 'cursor-not-allowed opacity-55' : ''
+            }`}
+          >
+            <span className="text-[13px] font-medium text-white">Use the enclave</span>
+            <span
+              className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200 ${
+                enclaveOn ? 'bg-white' : 'bg-white/25'
               }`}
             >
-              <span className="text-[13px] font-medium text-white">Use the enclave</span>
               <span
-                className={`relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200 ${
-                  enclaveOn ? 'bg-white' : 'bg-white/25'
+                className={`absolute top-[2px] h-[18px] w-[18px] rounded-full shadow-sm transition-transform duration-200 ${
+                  enclaveOn ? 'translate-x-[18px] bg-brand' : 'translate-x-[2px] bg-white'
                 }`}
-              >
-                <span
-                  className={`absolute top-[2px] h-[18px] w-[18px] rounded-full shadow-sm transition-transform duration-200 ${
-                    enclaveOn ? 'translate-x-[18px] bg-brand' : 'translate-x-[2px] bg-white'
-                  }`}
-                />
-              </span>
-            </button>
-            <p className="mt-2 text-[12px] leading-snug text-white/55">
-              {enclaveLocked
-                ? 'Required when more than one chain is selected.'
-                : enclaveOn
-                  ? 'Recovery enrolls at sign-in. A new device restores on first transaction.'
-                  : 'A synced passkey authorizes a new device. One chain per app.'}
-            </p>
-          </div>
-        )}
+              />
+            </span>
+          </button>
+          <p className="mt-2 text-[12px] leading-snug text-white/55">
+            {enclaveLocked
+              ? 'Required when more than one chain is selected.'
+              : enclaveOn
+                ? 'Recovery enrolls at sign-in. A new device restores with the same login.'
+                : 'A synced passkey authorizes a new device. One chain per app.'}
+          </p>
+        </div>
 
         <div className="px-5 py-3">
           <p className="mb-2.5 text-[12.5px] font-medium text-white">Appearance</p>

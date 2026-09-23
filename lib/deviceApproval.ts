@@ -9,11 +9,13 @@ const KEY = 'cavos-demo:device-approval';
  * tester meant to exercise is the one that never runs.
  */
 export function loadDeviceApproval(): DeviceApproval {
-  if (typeof window === 'undefined') return 'enclave';
+  if (typeof window === 'undefined') return 'passkey';
   try {
-    return window.localStorage.getItem(KEY) === 'passkey' ? 'passkey' : 'enclave';
+    const stored = window.localStorage.getItem(KEY);
+    if (stored === 'enclave') return 'enclave';
+    return 'passkey';
   } catch {
-    return 'enclave';
+    return 'passkey';
   }
 }
 
@@ -37,12 +39,12 @@ export type PasskeyChain = (typeof CHAINS)[number];
  * different wallet than the one they chose.
  */
 export function loadPasskeyChain(): PasskeyChain {
-  if (typeof window === 'undefined') return 'starknet';
+  if (typeof window === 'undefined') return 'solana';
   try {
     const stored = window.localStorage.getItem(CHAIN_KEY);
-    return CHAINS.includes(stored as PasskeyChain) ? (stored as PasskeyChain) : 'starknet';
+    return CHAINS.includes(stored as PasskeyChain) ? (stored as PasskeyChain) : 'solana';
   } catch {
-    return 'starknet';
+    return 'solana';
   }
 }
 
@@ -58,23 +60,20 @@ export function storePasskeyChain(value: PasskeyChain): void {
 const SELECTED_KEY = 'cavos-demo:selected-chains';
 
 /**
- * Which chains the demo session configures. Not all three: that was the
- * default that mixed Stellar (passkey only) with the enclave chains and hung
- * a new device on "Connecting with Google".
- *
- * Stellar cannot sit in the same session as the others. Classic G has no
- * enclave, and a passkey is one chain. Mixing them is a config the kit
- * refuses, so the toggle never produces it.
+ * Which chains the demo session configures. Native Stellar unwraps the same
+ * MasterDEK as Solana, so it can sit next to the others under the enclave.
+ * A passkey is still one chain: the kit refuses that mix, and the toggle
+ * forces enclave as soon as a second chain is checked.
  */
 export function loadSelectedChains(): PasskeyChain[] {
-  if (typeof window === 'undefined') return ['starknet'];
+  if (typeof window === 'undefined') return ['solana'];
   try {
     const raw = window.localStorage.getItem(SELECTED_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as unknown;
       if (Array.isArray(parsed)) {
         const valid = parsed.filter((c): c is PasskeyChain => CHAINS.includes(c as PasskeyChain));
-        if (valid.length > 0) return exclusiveStellar(valid);
+        if (valid.length > 0) return valid;
       }
     }
   } catch {
@@ -86,26 +85,20 @@ export function loadSelectedChains(): PasskeyChain[] {
 export function storeSelectedChains(value: PasskeyChain[]): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(SELECTED_KEY, JSON.stringify(exclusiveStellar(value)));
+    window.localStorage.setItem(SELECTED_KEY, JSON.stringify(value));
   } catch {
     /* a demo setting is not worth failing over */
   }
 }
 
-/** Stellar is its own session. Checking it drops the others; checking another drops Stellar. */
+/** Checking a chain adds it; unchecking drops it. The last one cannot be cleared. */
 export function toggleSelectedChain(current: PasskeyChain[], key: PasskeyChain): PasskeyChain[] {
   const on = current.includes(key);
   if (on) {
     const next = current.filter((c) => c !== key);
     return next.length > 0 ? next : current;
   }
-  if (key === 'stellar') return ['stellar'];
-  return exclusiveStellar([...current.filter((c) => c !== 'stellar'), key]);
-}
-
-function exclusiveStellar(chains: PasskeyChain[]): PasskeyChain[] {
-  if (chains.includes('stellar') && chains.length > 1) return ['stellar'];
-  return chains;
+  return [...current, key];
 }
 
 const VIEW_CHAIN_KEY = 'cavos-demo:view-chain';
@@ -116,12 +109,12 @@ const VIEW_CHAIN_KEY = 'cavos-demo:view-chain';
  * return always lands on Starknet even if the tester picked Stellar.
  */
 export function loadViewChain(): PasskeyChain {
-  if (typeof window === 'undefined') return 'starknet';
+  if (typeof window === 'undefined') return 'solana';
   try {
     const stored = window.localStorage.getItem(VIEW_CHAIN_KEY);
-    return CHAINS.includes(stored as PasskeyChain) ? (stored as PasskeyChain) : 'starknet';
+    return CHAINS.includes(stored as PasskeyChain) ? (stored as PasskeyChain) : 'solana';
   } catch {
-    return 'starknet';
+    return 'solana';
   }
 }
 
