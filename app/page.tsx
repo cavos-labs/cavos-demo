@@ -94,8 +94,9 @@ export default function Page() {
       chain: selectedChains.includes(viewChain) ? viewChain : selectedChains[0],
       // Names this app's device-key slot, so it is stable forever: changing it
       // makes every returning user's device unknown to their wallet. v9 is a
-      // fresh-account reset for keys held in the Cavos vault.
-      appSalt: 'cavos-demo-v9',
+      // fresh-account reset for keys held in the Cavos vault; v12 resets again
+      // for passkeys that restore native wallets (@cavos/kit 0.2.1).
+      appSalt: 'cavos-demo-v12',
       socialRecovery: deviceApprovalForSession === 'enclave',
       deviceApproval: deviceApprovalForSession,
       // Per chain, not one for all: a single `rpcUrl` reaches every chain, so
