@@ -145,7 +145,6 @@ export function Demo({
     }
     radius: ${radius},
     providers: [${providers.map((p) => `'${p}'`).join(', ')}],
-    emailMode: 'otp',
   }}
 >
   <App />
@@ -157,7 +156,6 @@ export function Demo({
     appLogo: appLogo || undefined,
     appLogoSize: 56,
     providers,
-    emailMode: 'otp' as const,
     primaryColor: accent,
     theme,
     backgroundColor,
