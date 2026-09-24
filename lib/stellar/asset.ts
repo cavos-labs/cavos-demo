@@ -14,6 +14,8 @@ export const STELLAR_USDC = process.env.NEXT_PUBLIC_STELLAR_USDC || DEFAULT_STEL
 export const CLAIMABLE_AMOUNT = '25';
 /** Ceiling on what Activate may take from the claimed USDC. */
 export const ACTIVATE_MAX_SEND = '5';
+/** Ceiling on what a USDC send may take as fee. */
+export const PAY_MAX_FEE = '0.05';
 
 /** Split `CODE:ISSUER` into its parts. Throws on anything else. */
 export function parseAsset(canonical: string): { code: string; issuer: string } {
