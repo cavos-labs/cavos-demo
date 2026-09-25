@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useCavos } from '@cavos/kit/react';
 import { Shield, Fingerprint, KeyRound, Copy, Check, AlertCircle, Users } from 'lucide-react';
+import type { DeviceApproval } from '@/lib/deviceApproval';
 
 /**
- * Security: passkey enrollment, recovery code setup, and (on Starknet and
- * Solana) social recovery. Classic Stellar uses passkey or recovery code.
+ * Security: on-chain passkey enrollment and social recovery on Starknet;
+ * native Solana/Stellar restore with the passkey or login used at sign-in.
  */
 /** Coarse "2h 5m" / "5m" / "40s" rendering of a countdown in seconds. */
 function formatDelay(seconds: number): string {
@@ -19,8 +20,15 @@ function formatDelay(seconds: number): string {
   return `${seconds}s`;
 }
 
-export function SecurityPanel() {
-  const { walletStatus, enrollPasskeyDefault, setupRecovery, passkeySupported, chain } = useCavos();
+export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApproval }) {
+  const {
+    walletStatus,
+    enrollPasskeyDefault,
+    approveDeviceWithPasskey,
+    setupRecovery,
+    passkeySupported,
+    chain,
+  } = useCavos();
 
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyError, setPasskeyError] = useState('');
@@ -52,7 +60,11 @@ export function SecurityPanel() {
     setPasskeyBusy(true);
     setPasskeyError('');
     try {
-      await enrollPasskeyDefault();
+      if (walletStatus.needsDeviceApproval) {
+        await approveDeviceWithPasskey();
+      } else {
+        await enrollPasskeyDefault();
+      }
     } catch (e) {
       setPasskeyError(e instanceof Error ? e.message : 'Could not enable passkey');
     } finally {
@@ -84,6 +96,7 @@ export function SecurityPanel() {
 
       <div className="space-y-2.5">
         {/* Passkey */}
+        {chain === 'starknet' ? (
         <div className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2.5">
           <div className="flex items-center gap-2.5">
             <Fingerprint size={16} className="text-ink" />
@@ -109,13 +122,51 @@ export function SecurityPanel() {
             </button>
           )}
         </div>
+        ) : deviceApproval === 'passkey' ? (
+        <div className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <Fingerprint size={16} className="text-ink" />
+            <div className="leading-tight">
+              <p className="text-[13px] font-medium text-ink">Passkey</p>
+              <p className="text-[11px] text-muted">
+                {walletStatus.needsDeviceApproval
+                  ? 'This device still needs the passkey that wraps the key'
+                  : hasPasskey
+                    ? 'Enabled — a new device opens the same key with it'
+                    : 'Add one when you want. Creating the account does not ask'}
+              </p>
+            </div>
+          </div>
+          {walletStatus.needsDeviceApproval || !hasPasskey ? (
+            <button
+              onClick={handlePasskey}
+              disabled={passkeyBusy || !passkeySupported}
+              title={!passkeySupported ? 'Passkeys not supported in this browser' : undefined}
+              className="rounded-md border border-line-strong bg-white px-2.5 py-1 text-[12px] font-semibold text-ink transition-colors hover:border-ink/40 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {passkeyBusy
+                ? walletStatus.needsDeviceApproval
+                  ? 'Restoring…'
+                  : 'Enrolling…'
+                : walletStatus.needsDeviceApproval
+                  ? 'Restore'
+                  : 'Enable'}
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600">
+              <Check size={13} /> On
+            </span>
+          )}
+        </div>
+        ) : null}
         {passkeyError && (
           <p className="flex items-start gap-1.5 px-1 text-[11.5px] text-red-600">
             <AlertCircle size={12} className="mt-0.5 shrink-0" /> {passkeyError}
           </p>
         )}
 
-        {/* Recovery */}
+        {chain !== 'solana' && (
+        <>
         <div className="rounded-lg border border-line bg-white px-3 py-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -171,13 +222,16 @@ export function SecurityPanel() {
             <AlertCircle size={12} className="mt-0.5 shrink-0" /> {recoveryError}
           </p>
         )}
+        </>
+        )}
 
         {/* Social recovery — enrolls itself on social login when the app has
             `socialRecovery: true` and the dashboard enables it, so there is
             nothing to click here. This row just surfaces the state the kit
             reports: enrolling, waiting on the on-chain timelock, or armed.
-            Classic Stellar does not use the enclave. */}
-        {chain !== 'stellar' && (
+            Native Solana/Stellar unwrap the DEK at connect; there is no
+            on-chain timelock. */}
+        {deviceApproval === 'enclave' && (
         <div className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2.5">
           <div className="flex items-center gap-2.5">
             <Users size={16} className="text-ink" />
@@ -188,7 +242,9 @@ export function SecurityPanel() {
                   ? 'Verifying identity in the enclave'
                   : socialWaiting
                     ? `Timelock — device added in ~${formatDelay(socialRemaining)}`
-                    : 'Restore access with your login, no code to keep'}
+                    : chain === 'starknet'
+                      ? 'Restore access with your login, no code to keep'
+                      : 'This wallet restores with the same login'}
               </p>
             </div>
           </div>

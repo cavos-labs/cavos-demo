@@ -20,6 +20,7 @@ import {
 const APP_ID = process.env.NEXT_PUBLIC_CAVOS_APP_ID ?? '';
 const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com';
 const STARKNET_PAYMASTER = process.env.NEXT_PUBLIC_STARKNET_PAYMASTER_API_KEY ?? '';
+const VAULT_URL = process.env.NEXT_PUBLIC_CAVOS_VAULT_URL;
 
 export default function Page() {
   // How a new device gets authorized is the app's decision, so in a demo of the
@@ -30,13 +31,12 @@ export default function Page() {
   // The stored choice is read after mount, not as the initial state: the server
   // has no localStorage, so seeding from it renders one thing on the server and
   // another on the client, and React discards the tree.
-  const [deviceApproval, setDeviceApproval] = useState<DeviceApproval>('enclave');
+  const [deviceApproval, setDeviceApproval] = useState<DeviceApproval>('passkey');
 
-  // Which chains the session configures, and which one is in view. Not all
-  // three: Stellar cannot share a session with the enclave chains, and a
-  // passkey is one chain. Checking Stellar drops the others.
-  const [viewChain, setViewChain] = useState<Chain>('starknet');
-  const [selectedChains, setSelectedChains] = useState<Chain[]>(['starknet']);
+  // Which chains the session configures, and which one is in view. All three
+  // can share an enclave session. A passkey is still one chain.
+  const [viewChain, setViewChain] = useState<Chain>('solana');
+  const [selectedChains, setSelectedChains] = useState<Chain[]>(['solana']);
 
   // Both are read after mount, because the server has no localStorage and
   // seeding state from it renders one thing there and another here. Nothing is
@@ -46,23 +46,24 @@ export default function Page() {
   const [settingsRead, setSettingsRead] = useState(false);
   useEffect(() => {
     const chains = loadSelectedChains();
+    storeSelectedChains(chains);
     setSelectedChains(chains);
     const view = chains.includes(loadViewChain()) ? loadViewChain() : chains[0];
+    storeViewChain(view as ReturnType<typeof loadViewChain>);
     setViewChain(view);
     if (chains.length === 1) {
       storePasskeyChain(chains[0] as ReturnType<typeof loadPasskeyChain>);
     }
-    // Stellar has no enclave. More than one chain has no passkey. Force the
-    // method that the kit will actually accept, so a stored toggle cannot
-    // throw on first render after OAuth.
-    if (chains.includes('stellar')) {
-      storeDeviceApproval('passkey');
-      setDeviceApproval('passkey');
-    } else if (chains.length > 1) {
+    // More than one chain has no passkey. Force the method the kit will
+    // actually accept, so a stored toggle cannot throw on first render after
+    // OAuth. Stellar follows the same rule as Solana: enclave or passkey.
+    if (chains.length > 1) {
       storeDeviceApproval('enclave');
       setDeviceApproval('enclave');
     } else {
-      setDeviceApproval(loadDeviceApproval());
+      const method = loadDeviceApproval();
+      storeDeviceApproval(method);
+      setDeviceApproval(method);
     }
     setSettingsRead(true);
   }, []);
@@ -75,32 +76,28 @@ export default function Page() {
     if (next.length === 1) {
       storePasskeyChain(next[0] as ReturnType<typeof loadPasskeyChain>);
     }
-    if (next.includes('stellar')) {
-      storeDeviceApproval('passkey');
-      setDeviceApproval('passkey');
-    } else if (next.length > 1) {
+    if (next.length > 1) {
       storeDeviceApproval('enclave');
       setDeviceApproval('enclave');
     }
   };
 
-  const includesStellar = selectedChains.includes('stellar');
-  const deviceApprovalForSession: DeviceApproval = includesStellar
-    ? 'passkey'
-    : selectedChains.length > 1
-      ? 'enclave'
-      : deviceApproval;
+  const deviceApprovalForSession: DeviceApproval =
+    selectedChains.length > 1 ? 'enclave' : deviceApproval;
 
   const config = useMemo<CavosConfig>(
     () => ({
       appId: APP_ID,
+      persistSession: false, // the demo signs out when its tab closes
       chains: selectedChains,
       defaultChain: selectedChains.includes(viewChain) ? viewChain : selectedChains[0],
       network: 'testnet',
+      chain: selectedChains.includes(viewChain) ? viewChain : selectedChains[0],
       // Names this app's device-key slot, so it is stable forever: changing it
-      // makes every returning user's device unknown to their wallet. v5 is a
-      // fresh-account reset for per-device Stellar signers (kit 0.1.13).
-      appSalt: 'cavos-demo-v5',
+      // makes every returning user's device unknown to their wallet. v9 is a
+      // fresh-account reset for keys held in the Cavos vault; v12 resets again
+      // for passkeys that restore native wallets (@cavos/kit 0.2.1).
+      appSalt: 'cavos-demo-v12',
       socialRecovery: deviceApprovalForSession === 'enclave',
       deviceApproval: deviceApprovalForSession,
       // Per chain, not one for all: a single `rpcUrl` reaches every chain, so
@@ -108,6 +105,8 @@ export default function Page() {
       // found".
       rpcUrls: selectedChains.includes('solana') ? { solana: SOLANA_RPC } : undefined,
       paymasterApiKey: selectedChains.includes('starknet') ? STARKNET_PAYMASTER : undefined,
+      // Unset uses the hosted vault; a local cavos-web serves it at /vault.
+      ...(VAULT_URL ? { vault: { url: VAULT_URL } } : {}),
     }),
     [deviceApprovalForSession, selectedChains, viewChain],
   );

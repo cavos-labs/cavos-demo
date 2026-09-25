@@ -142,7 +142,7 @@ export function Demo({
   const configCode = useMemo(() => {
     const extras = [
       selectedChains.includes('starknet') ? `\n    paymasterApiKey: 'YOUR_PAYMASTER_KEY',` : '',
-      selectedChains.includes('solana') ? `\n    rpcUrl: 'YOUR_SOLANA_RPC',` : '',
+      selectedChains.includes('solana') ? `\n    rpcUrls: { solana: 'YOUR_SOLANA_RPC' },` : '',
     ].join('');
     const listed = selectedChains.map((c) => `'${c}'`).join(', ');
     return `import { CavosProvider } from '@cavos/kit/react';
@@ -164,7 +164,6 @@ export function Demo({
     }
     radius: ${radius},
     providers: [${providers.map((p) => `'${p}'`).join(', ')}],
-    emailMode: 'otp',
   }}
 >
   <App />
@@ -176,7 +175,6 @@ export function Demo({
     appLogo: appLogo || undefined,
     appLogoSize: 56,
     providers,
-    emailMode: 'otp' as const,
     primaryColor: accent,
     theme,
     backgroundColor,
@@ -263,7 +261,7 @@ export function Demo({
               <div className="relative z-10 h-full min-h-[520px] p-4 lg:min-h-0 lg:p-5">
                 <div className="sheet-light h-full overflow-hidden rounded-lg bg-white text-ink shadow-[0_24px_60px_rgba(16,8,64,0.28)]">
                   <div className="h-full overflow-y-auto">
-                    <DevTools chain={chain} />
+                    <DevTools chain={chain} deviceApproval={deviceApproval} />
                   </div>
                 </div>
               </div>
