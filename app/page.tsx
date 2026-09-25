@@ -88,6 +88,7 @@ export default function Page() {
   const config = useMemo<CavosConfig>(
     () => ({
       appId: APP_ID,
+      persistSession: false, // the demo signs out when its tab closes
       chains: selectedChains,
       defaultChain: selectedChains.includes(viewChain) ? viewChain : selectedChains[0],
       network: 'testnet',

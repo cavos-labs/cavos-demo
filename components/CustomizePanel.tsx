@@ -294,7 +294,7 @@ export function CustomizePanel(p: Props) {
                 value={p.appName}
                 onChange={(e) => p.setAppName(e.target.value)}
                 placeholder="Your app"
-                className="w-full rounded-md border border-white/20 bg-white/10 px-2.5 py-1.5 text-[13px] text-white outline-none transition-colors duration-150 placeholder:text-white/35 focus:border-white/55"
+                className="w-full rounded-md border border-white/20 bg-white/10 px-2.5 py-1.5 text-base text-white outline-none transition-colors duration-150 placeholder:text-white/35 focus:border-white/55 sm:text-[13px]"
               />
             </div>
             <div>
@@ -306,7 +306,7 @@ export function CustomizePanel(p: Props) {
                 value={p.appLogo}
                 onChange={(e) => p.setAppLogo(e.target.value)}
                 placeholder="https://"
-                className="w-full truncate rounded-md border border-white/20 bg-white/10 px-2.5 py-1.5 font-mono text-[12px] text-white outline-none transition-colors duration-150 placeholder:text-white/35 focus:border-white/55"
+                className="w-full truncate rounded-md border border-white/20 bg-white/10 px-2.5 py-1.5 font-mono text-base text-white outline-none transition-colors duration-150 placeholder:text-white/35 focus:border-white/55 sm:text-[12px]"
               />
             </div>
           </div>
