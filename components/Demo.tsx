@@ -69,7 +69,8 @@ export function Demo({
   selectedChains: Chain[];
   setSelectedChains: (c: Chain[]) => void;
 }) {
-  const { walletStatus, chain: sessionChain, isAuthenticated, address, logout } = useCavos();
+  const { walletStatus, chain: sessionChain, isAuthenticated, address, logout, authError } =
+    useCavos();
 
   const switchApproval = (next: DeviceApproval) => {
     if (next === deviceApproval) return;
@@ -95,13 +96,20 @@ export function Demo({
   // The demo used to swap it for DevTools the instant `address` landed, so the
   // return from Google/Apple looked like the modal had just closed.
   const [authDismissed, setAuthDismissed] = useState(false);
+  // Latch auth failures: the kit clears authError after one render (copies it into
+  // modal-local state), so !!authError alone would close the overlay again.
+  const [authFailed, setAuthFailed] = useState(false);
   const authedRef = useRef(isAuthenticated);
   authedRef.current = isAuthenticated;
   useEffect(() => {
     if (!isAuthenticated) setAuthDismissed(false);
   }, [isAuthenticated]);
+  useEffect(() => {
+    if (authError) setAuthFailed(true);
+  }, [authError]);
   const handleAuthClose = useCallback(() => {
     setAuthOpen(false);
+    setAuthFailed(false);
     if (authedRef.current) setAuthDismissed(true);
   }, []);
 
@@ -119,6 +127,17 @@ export function Demo({
       : BG_MAP[background];
   const isReady = isAuthenticated && !!address;
   const showWorkspace = isReady && authDismissed;
+  // Keep the connecting / success / error sheet as a full-screen overlay for the
+  // whole post-OAuth stretch. On the first client paint `useIsMobile()` is still
+  // false, so the old branch rendered the modal `inline` under the customize
+  // panel — the loader looked "hidden" behind Launch login until isMobile flipped.
+  const authInProgress =
+    walletStatus.isDeploying ||
+    authFailed ||
+    walletStatus.needsDeviceApproval ||
+    (isAuthenticated && !authDismissed);
+  const showAuthOverlay = isMobile || authInProgress;
+  const mobileAuthOpen = authOpen || authInProgress;
 
   const configCode = useMemo(() => {
     const extras = [
@@ -249,13 +268,7 @@ export function Demo({
                 </div>
               </div>
             </section>
-          ) : isMobile ? (
-            <CavosAuthModal
-              open={authOpen || walletStatus.needsDeviceApproval || (isAuthenticated && !authDismissed)}
-              onClose={handleAuthClose}
-              {...modalProps}
-            />
-          ) : (
+          ) : !showAuthOverlay ? (
             <section className="relative flex min-h-[480px] lg:h-full lg:min-h-0">
               <div className="dot-grid pointer-events-none absolute inset-0 opacity-40" />
               <div className="relative z-10 flex w-full flex-1 items-center justify-center p-5">
@@ -264,7 +277,7 @@ export function Demo({
                 </div>
               </div>
             </section>
-          )}
+          ) : null}
         </div>
 
         <section className="border-t border-white/15 px-6 py-8 md:px-10">
@@ -286,17 +299,26 @@ export function Demo({
         </section>
       </div>
 
-      {isMobile && !showWorkspace && (
+      {isMobile && !showWorkspace && !mobileAuthOpen && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/15 bg-brand/90 px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md sm:hidden">
           <button
             type="button"
-            onClick={() => setAuthOpen(true)}
+            onClick={() => {
+              setAuthFailed(false);
+              setAuthOpen(true);
+            }}
             data-pressable
             className="inline-flex w-full items-center justify-center rounded-md bg-white px-5 py-3.5 text-[15px] font-semibold text-brand transition-colors duration-150 hover:bg-white/90"
           >
             Launch login
           </button>
         </div>
+      )}
+
+      {/* Overlay sits last so the connecting loader always stacks above the
+          customize panel and the Launch login bar until the kit dismisses it. */}
+      {!showWorkspace && showAuthOverlay && (
+        <CavosAuthModal open={mobileAuthOpen} onClose={handleAuthClose} {...modalProps} />
       )}
     </div>
   );

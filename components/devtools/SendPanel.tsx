@@ -121,7 +121,7 @@ export function SendPanel({ chain, stellar }: Props) {
               if (status !== 'idle') reset();
             }}
             placeholder={`${meta.label} address`}
-            className="w-full rounded-lg border border-line-strong bg-white px-3 py-2 font-mono text-[12px] text-ink outline-none transition-colors focus:border-ink"
+            className="w-full rounded-lg border border-line-strong bg-white px-3 py-2 font-mono text-base text-ink outline-none transition-colors focus:border-ink sm:text-[12px]"
           />
         </div>
         <div>
@@ -136,7 +136,7 @@ export function SendPanel({ chain, stellar }: Props) {
               }}
               inputMode="decimal"
               placeholder="0.0"
-              className="w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-[13px] text-ink outline-none transition-colors focus:border-ink"
+              className="w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-base text-ink outline-none transition-colors focus:border-ink sm:text-[13px]"
             />
             <span className="shrink-0 text-[12px] font-semibold text-muted">{meta.symbol}</span>
           </div>
