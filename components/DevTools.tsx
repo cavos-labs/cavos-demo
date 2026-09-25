@@ -6,6 +6,7 @@ import { BalancePanel } from './devtools/BalancePanel';
 import { SendPanel } from './devtools/SendPanel';
 import { SignPanel } from './devtools/SignPanel';
 import { SecurityPanel } from './devtools/SecurityPanel';
+import { StellarUsdcSendPanel } from './devtools/StellarUsdcSendPanel';
 import { CHAINS, type Chain } from '@/lib/chains';
 import type { DeviceApproval } from '@/lib/deviceApproval';
 import { useStellarBootstrap } from '@/lib/stellar/bootstrap';
@@ -109,6 +110,11 @@ export function DevTools({ chain, deviceApproval }: { chain: Chain; deviceApprov
           <div className="px-5 py-4">
             <SendPanel chain={chain} stellar={stellar} />
           </div>
+          {chain === 'stellar' && (
+            <div className="px-5 py-4">
+              <StellarUsdcSendPanel stellar={stellar} />
+            </div>
+          )}
           <div className="px-5 py-4">
             <SignPanel chain={chain} />
           </div>
