@@ -72,7 +72,7 @@ export function SignPanel({ chain }: Props) {
             }}
             rows={2}
             placeholder="Anything you want to prove you own this wallet for"
-            className="w-full resize-none rounded-lg border border-line-strong bg-white px-3 py-2 text-[13px] text-ink outline-none transition-colors focus:border-ink"
+            className="w-full resize-none rounded-lg border border-line-strong bg-white px-3 py-2 text-base text-ink outline-none transition-colors focus:border-ink sm:text-[13px]"
           />
         </div>
 
