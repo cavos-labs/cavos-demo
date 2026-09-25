@@ -19,7 +19,7 @@ Open http://localhost:3000.
 | `NEXT_PUBLIC_CAVOS_APP_ID` | Cavos app id — activates the gasless relayer + branding. Register at cavos.xyz. |
 | `NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL` | Devnet RPC (Alchemy/Helius). Public devnet fails from the browser. |
 | `STELLAR_TREASURY_SECRET` | Server-only testnet treasury secret for "Receive a USDC payment". |
-| `NEXT_PUBLIC_STELLAR_USDC` | `CODE:ISSUER` the demo pays and Reserve charges in. Defaults to Cavos Testnet USDC. |
+| `NEXT_PUBLIC_STELLAR_USDC` | `CODE:ISSUER` the demo pays and Reserve charges in. Defaults to Circle testnet USDC. |
 | `STELLAR_CLAIMABLE_AMOUNT` | USDC per claimable balance (default `25`). Must exceed the activate ceiling (5). |
 
 ## Stellar: XLM or USDC
@@ -38,6 +38,16 @@ A fresh Stellar address can come to life two ways, and the Balance panel offers 
 
 Each unclaimed claimable locks 25 USDC + 0.5 XLM of treasury reserve. A Reserve-created account has no Cavos on-chain envelope, so it only unlocks on the browser that created it.
 
+## Fee route (testnet)
+
+Send USDC pays Reserve's fee by buying XLM with USDC. On testnet that book is thin, so the quote pins a hop that disappears before submit (`path moved`). The treasury posts one standing offer — sell XLM, buy Circle USDC — so the direct route wins and the quoted hop list stays empty.
+
+```bash
+npm run stellar:fee-path -- --price=9 --amount=4500
+```
+
+`STELLAR_TREASURY_SECRET` lives in `.env.local` (server only). Add `--topup` if the treasury is short of XLM, and `--check` to confirm Horizon and Reserve both return `path:[]`. Mainnet Circle USDC already has a deep direct book, so production does not need this seed.
+
 ## The kit dependency
 
-This demo uses [`@cavos/kit@0.1.11`](https://www.npmjs.com/package/@cavos/kit): a multi-chain session, lazy deploy, and the modal's `inline` render mode plus `backgroundColor` / `radius` / `appLogo` theming.
+This demo uses [`@cavos/kit@0.2.4`](https://www.npmjs.com/package/@cavos/kit): multi-chain session, Cavos vault, lazy deploy, and the modal's `inline` render mode plus `backgroundColor` / `radius` / `appLogo` theming.

@@ -5,6 +5,7 @@ import { useCavos } from '@cavos/kit/react';
 import { Send, ExternalLink, Check } from 'lucide-react';
 import { CHAINS } from '@/lib/chains';
 import {
+  CLAIMABLE_MAX_FEE,
   PAY_MAX_FEE,
   STELLAR_USDC,
   assetLabel,
@@ -20,6 +21,7 @@ type StellarWallet = { chain: 'stellar'; signXdr: (xdr: string) => Promise<strin
 const asStellar = (w: unknown) => w as StellarWallet;
 
 const STELLAR_ADDR = /^G[A-Z2-7]{55}$/;
+const FEE_PATH_RETRY = /path moved|re-quote|expired/i;
 
 /** Scale a decimal string to stroops (7 dp). Rejects >7 fractional digits; no rounding. */
 function toStroops(amount: string): bigint | null {
@@ -39,7 +41,8 @@ interface Props {
 }
 
 /**
- * Send testnet USDC via Reserve.pay. Fee is USDC (PAY_MAX_FEE), so 0 XLM can still pay.
+ * Send testnet USDC via Reserve.pay. Fee is USDC — PAY_MAX_FEE when the
+ * destination can receive, CLAIMABLE_MAX_FEE when Reserve leaves a claimable.
  * SendPanel stays responsible for native XLM.
  */
 export function StellarUsdcSendPanel({ stellar }: Props) {
@@ -55,6 +58,7 @@ export function StellarUsdcSendPanel({ stellar }: Props) {
   const [errorMsg, setErrorMsg] = useState('');
   const [txHash, setTxHash] = useState<string | null>(null);
   const [sentReady, setSentReady] = useState(false);
+  const [requoting, setRequoting] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -85,6 +89,7 @@ export function StellarUsdcSendPanel({ stellar }: Props) {
     setErrorMsg('');
     setTxHash(null);
     setSentReady(false);
+    setRequoting(false);
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -131,7 +136,7 @@ export function StellarUsdcSendPanel({ stellar }: Props) {
     }
     if (amountStroops + feeStroops > balanceStroops) {
       setStatus('error');
-      setErrorMsg('Not enough USDC (keep up to 0.05 for the fee)');
+      setErrorMsg(`Not enough USDC (keep up to ${PAY_MAX_FEE} for the fee)`);
       return;
     }
 
@@ -146,18 +151,39 @@ export function StellarUsdcSendPanel({ stellar }: Props) {
       }
 
       const ready = await reserve.destinationReady(dest, STELLAR_USDC);
-      const { hash } = await reserve.pay(
-        {
-          source: address,
-          destination: dest,
-          amount: amt,
-          token: STELLAR_USDC,
-          maxSend: PAY_MAX_FEE,
-        },
-        (xdr) => asStellar(wallet).signXdr(xdr),
-      );
+      if (!ready) {
+        const claimFeeStroops = toStroops(CLAIMABLE_MAX_FEE);
+        if (claimFeeStroops === null || amountStroops + claimFeeStroops > balanceStroops) {
+          setStatus('error');
+          setErrorMsg(
+            `Not enough USDC to leave a claimable balance (keep up to ${CLAIMABLE_MAX_FEE} for the fee)`,
+          );
+          return;
+        }
+      }
 
-      setTxHash(hash);
+      const maxSend = ready ? PAY_MAX_FEE : CLAIMABLE_MAX_FEE;
+      const sign = (xdr: string) => asStellar(wallet).signXdr(xdr);
+      const input = {
+        source: address,
+        destination: dest,
+        amount: amt,
+        token: STELLAR_USDC,
+        maxSend,
+      };
+
+      let submitted: { hash: string };
+      try {
+        submitted = await reserve.pay(input, sign);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!FEE_PATH_RETRY.test(msg)) throw err;
+        setRequoting(true);
+        submitted = await reserve.pay(input, sign);
+      }
+
+      setRequoting(false);
+      setTxHash(submitted.hash);
       setSentReady(ready);
       setStatus('done');
       setDestination('');
@@ -169,6 +195,7 @@ export function StellarUsdcSendPanel({ stellar }: Props) {
         // pay resolved — keep the success note even if refresh fails
       }
     } catch (err) {
+      setRequoting(false);
       setStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'Transaction failed');
     }
@@ -220,7 +247,7 @@ export function StellarUsdcSendPanel({ stellar }: Props) {
           className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand px-4 py-2.5 text-[13px] font-semibold text-white transition-all hover:bg-brand-hover active:scale-[0.99] disabled:opacity-60"
         >
           <Send size={14} />
-          {status === 'sending' ? 'Sending…' : 'Send USDC'}
+          {status === 'sending' ? (requoting ? 'Re-quoting…' : 'Sending…') : 'Send USDC'}
         </button>
 
         {status === 'done' && txHash && (
@@ -242,7 +269,9 @@ export function StellarUsdcSendPanel({ stellar }: Props) {
           </div>
         )}
         {status === 'error' && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-600">{errorMsg}</p>
+          <p className="min-w-0 overflow-hidden rounded-lg bg-red-50 px-3 py-2 text-[12px] break-words text-red-600 [overflow-wrap:anywhere]">
+            {errorMsg}
+          </p>
         )}
       </form>
 

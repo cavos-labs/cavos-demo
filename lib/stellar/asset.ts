@@ -1,21 +1,28 @@
 // Stellar asset identity for the demo. Client-safe on purpose: plain fetch
 // against Horizon and the small `@cavos/reserve` client — `stellar-sdk` stays
-// in the server route, out of the browser bundle.
+// in the server route and `scripts/seed-fee-path.mjs`, out of the browser bundle.
 import type { Reserve } from '@cavos/reserve';
 
 export const HORIZON_TESTNET = 'https://horizon-testnet.stellar.org';
 
-// Cavos Testnet USDC — the asset the hosted testnet deployment lists.
+// Circle testnet USDC (centre.io). Cavos USDC (`USDC:GCKUFD5K…`, cavos.xyz)
+// has no faucet and an empty ask book — the demo cannot depend on a team mint.
 export const DEFAULT_STELLAR_USDC =
-  'USDC:GCKUFD5KAAM6DRSLODK55OVECMB5IJ5NSFQYFTBZRPOTJASUKTBZXGS2';
+  'USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 export const STELLAR_USDC = process.env.NEXT_PUBLIC_STELLAR_USDC || DEFAULT_STELLAR_USDC;
 
 /** Display-only default; the server route reads its own env for the real amount. */
 export const CLAIMABLE_AMOUNT = '25';
 /** Ceiling on what Activate may take from the claimed USDC. */
 export const ACTIVATE_MAX_SEND = '5';
-/** Ceiling on what a USDC send may take as fee. */
+/** Ceiling on what a USDC payment may take as fee when the destination can receive. */
 export const PAY_MAX_FEE = '0.05';
+/**
+ * Ceiling when Reserve leaves a claimable balance instead of a payment.
+ * Measured testnet fee (XLM bought with USDC): trustline path ~0.0056 XLM,
+ * claimable ~1.20006 XLM. At the seeded book (9 XLM per USDC) both sit under 0.5 USDC.
+ */
+export const CLAIMABLE_MAX_FEE = '0.5';
 
 /** Split `CODE:ISSUER` into its parts. Throws on anything else. */
 export function parseAsset(canonical: string): { code: string; issuer: string } {
