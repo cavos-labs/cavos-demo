@@ -9,7 +9,13 @@ import { CvBolt } from '../CavosIcons';
 
 // Minimal shapes for the two `execute` signatures. The kit's wallet classes
 // aren't exported from the React entry, so we cast through `unknown`.
-type NativeSendWallet = { execute: (amount: bigint, destination: string) => Promise<string> };
+type NativeSendWallet = {
+  execute: (
+    amount: bigint,
+    destination: string,
+    opts?: { fee?: 'self' | 'sponsored' },
+  ) => Promise<string>;
+};
 function asNativeSender(w: unknown): NativeSendWallet {
   return w as NativeSendWallet;
 }
@@ -97,7 +103,10 @@ export function SendPanel({ chain, stellar }: Props) {
               },
             ])
           ).transactionHash
-        : await asNativeSender(wallet).execute(baseAmount, dest);
+        : // Said out loud rather than left to the default, which flipped on
+          // Solana in @cavos/kit 0.2.5: the account pays its own fee there now.
+          // Nobody funds a wallet to try a demo, so this one sponsors.
+          await asNativeSender(wallet).execute(baseAmount, dest, { fee: 'sponsored' });
       setTxHash(hash);
       setStatus('done');
       setDestination('');
