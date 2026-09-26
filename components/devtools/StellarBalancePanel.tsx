@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCavos } from '@cavos/kit/react';
-import { Reserve, ReserveError } from '@cavos/reserve';
+import { ReserveError } from '@cavos/reserve';
 import { RefreshCw, ArrowDownToLine, Check, ExternalLink, Zap } from 'lucide-react';
 import { CHAINS, formatNative } from '@/lib/chains';
 import {
@@ -14,6 +14,7 @@ import {
   parseAsset,
 } from '@/lib/stellar/asset';
 import type { StellarBootstrapHandle } from '@/lib/stellar/bootstrap';
+import { useReserve } from '@/lib/stellar/useReserve';
 import { Section } from './BalanceSection';
 
 // The kit's wallet classes aren't exported from the React entry, so we cast
@@ -46,12 +47,7 @@ export function StellarBalancePanel({ bootstrap }: { chain: 'stellar'; bootstrap
   const [actor, setActor] = useState<'receive' | 'friendbot' | 'activate' | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
 
-  // Reserve.connect hits the service; keep one per panel, built lazily.
-  const reserveRef = useRef<Promise<Reserve> | null>(null);
-  const getReserve = useCallback(() => {
-    reserveRef.current ??= Reserve.connect('testnet');
-    return reserveRef.current;
-  }, []);
+  const getReserve = useReserve();
 
   useEffect(() => {
     let live = true;
