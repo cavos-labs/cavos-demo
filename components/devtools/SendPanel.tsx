@@ -177,7 +177,9 @@ export function SendPanel({ chain, stellar }: Props) {
           </div>
         )}
         {status === 'error' && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-600">{errorMsg}</p>
+          <p className="min-w-0 overflow-hidden rounded-lg bg-red-50 px-3 py-2 text-[12px] break-words text-red-600 [overflow-wrap:anywhere]">
+            {errorMsg}
+          </p>
         )}
       </form>
 

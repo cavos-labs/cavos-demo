@@ -19,7 +19,7 @@ Open http://localhost:3000.
 | `NEXT_PUBLIC_CAVOS_APP_ID` | Cavos app id — activates the gasless relayer + branding. Register at cavos.xyz. |
 | `NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL` | Devnet RPC (Alchemy/Helius). Public devnet fails from the browser. |
 | `STELLAR_TREASURY_SECRET` | Server-only testnet treasury secret for "Receive a USDC payment". |
-| `NEXT_PUBLIC_STELLAR_USDC` | `CODE:ISSUER` the demo pays and Reserve charges in. Defaults to Cavos Testnet USDC. |
+| `NEXT_PUBLIC_STELLAR_USDC` | `CODE:ISSUER` the demo pays and Reserve charges in. Defaults to Circle testnet USDC. |
 | `STELLAR_CLAIMABLE_AMOUNT` | USDC per claimable balance (default `25`). Must exceed the activate ceiling (5). |
 
 ## Stellar: XLM or USDC
@@ -40,4 +40,4 @@ Each unclaimed claimable locks 25 USDC + 0.5 XLM of treasury reserve. A Reserve-
 
 ## The kit dependency
 
-This demo uses [`@cavos/kit@0.1.11`](https://www.npmjs.com/package/@cavos/kit): a multi-chain session, lazy deploy, and the modal's `inline` render mode plus `backgroundColor` / `radius` / `appLogo` theming.
+This demo uses [`@cavos/kit@0.2.4`](https://www.npmjs.com/package/@cavos/kit): multi-chain session, Cavos vault, lazy deploy, and the modal's `inline` render mode plus `backgroundColor` / `radius` / `appLogo` theming.
