@@ -1,6 +1,6 @@
 // Stellar asset identity for the demo. Client-safe on purpose: plain fetch
 // against Horizon and the small `@cavos/reserve` client — `stellar-sdk` stays
-// in the server route and `scripts/seed-fee-path.mjs`, out of the browser bundle.
+// in the server route, out of the browser bundle.
 import type { Reserve } from '@cavos/reserve';
 
 export const HORIZON_TESTNET = 'https://horizon-testnet.stellar.org';

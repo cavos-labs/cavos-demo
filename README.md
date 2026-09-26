@@ -38,16 +38,6 @@ A fresh Stellar address can come to life two ways, and the Balance panel offers 
 
 Each unclaimed claimable locks 25 USDC + 0.5 XLM of treasury reserve. A Reserve-created account has no Cavos on-chain envelope, so it only unlocks on the browser that created it.
 
-## Fee route (testnet)
-
-Send USDC pays Reserve's fee by buying XLM with USDC. On testnet that book is thin, so the quote pins a hop that disappears before submit (`path moved`). The treasury posts one standing offer — sell XLM, buy Circle USDC — so the direct route wins and the quoted hop list stays empty.
-
-```bash
-npm run stellar:fee-path -- --price=9 --amount=4500
-```
-
-`STELLAR_TREASURY_SECRET` lives in `.env.local` (server only). Add `--topup` if the treasury is short of XLM, and `--check` to confirm Horizon and Reserve both return `path:[]`. Mainnet Circle USDC already has a deep direct book, so production does not need this seed.
-
 ## The kit dependency
 
 This demo uses [`@cavos/kit@0.2.4`](https://www.npmjs.com/package/@cavos/kit): multi-chain session, Cavos vault, lazy deploy, and the modal's `inline` render mode plus `backgroundColor` / `radius` / `appLogo` theming.
