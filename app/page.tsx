@@ -21,6 +21,8 @@ const APP_ID = process.env.NEXT_PUBLIC_CAVOS_APP_ID ?? '';
 const SOLANA_RPC = process.env.NEXT_PUBLIC_SOLANA_DEVNET_RPC_URL || 'https://api.devnet.solana.com';
 const STARKNET_PAYMASTER = process.env.NEXT_PUBLIC_STARKNET_PAYMASTER_API_KEY ?? '';
 const VAULT_URL = process.env.NEXT_PUBLIC_CAVOS_VAULT_URL;
+// Unset uses the hosted Cavos backend; set it to a local cavos-web to test one.
+const BACKEND_URL = process.env.NEXT_PUBLIC_CAVOS_BACKEND_URL;
 
 export default function Page() {
   // How a new device gets authorized is the app's decision, so in a demo of the
@@ -107,6 +109,7 @@ export default function Page() {
       paymasterApiKey: selectedChains.includes('starknet') ? STARKNET_PAYMASTER : undefined,
       // Unset uses the hosted vault; a local cavos-web serves it at /vault.
       ...(VAULT_URL ? { vault: { url: VAULT_URL } } : {}),
+      ...(BACKEND_URL ? { authBackendUrl: BACKEND_URL } : {}),
     }),
     [deviceApprovalForSession, selectedChains, viewChain],
   );

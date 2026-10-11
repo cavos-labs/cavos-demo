@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useCavos } from '@cavos/kit/react';
 import { Shield, Fingerprint, KeyRound, Copy, Check, AlertCircle, Users } from 'lucide-react';
 import type { DeviceApproval } from '@/lib/deviceApproval';
@@ -10,16 +10,6 @@ import type { DeviceApproval } from '@/lib/deviceApproval';
  * native Solana/Stellar restore with the passkey or login used at sign-in.
  */
 /** Coarse "2h 5m" / "5m" / "40s" rendering of a countdown in seconds. */
-function formatDelay(seconds: number): string {
-  if (seconds >= 3600) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.round((seconds % 3600) / 60);
-    return m ? `${h}h ${m}m` : `${h}h`;
-  }
-  if (seconds >= 60) return `${Math.ceil(seconds / 60)}m`;
-  return `${seconds}s`;
-}
-
 export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApproval }) {
   const {
     walletStatus,
@@ -38,18 +28,7 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
   const [recoveryCode, setRecoveryCode] = useState('');
   const [recoveryCopied, setRecoveryCopied] = useState(false);
 
-  // The timelock is an absolute unix second, so tick locally to count it down.
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-  useEffect(() => {
-    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
-    return () => clearInterval(id);
-  }, []);
-
   const socialBusy = walletStatus.isSocialRecovering;
-  const socialRemaining = walletStatus.socialRecoveryReadyAt
-    ? Math.max(0, walletStatus.socialRecoveryReadyAt - now)
-    : 0;
-  const socialWaiting = socialRemaining > 0;
 
   const hasPasskey = walletStatus.hasPasskey;
   // The kit doesn't expose a "recovery configured" flag, so we infer it from
@@ -228,9 +207,8 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
         {/* Social recovery — enrolls itself on social login when the app has
             `socialRecovery: true` and the dashboard enables it, so there is
             nothing to click here. This row just surfaces the state the kit
-            reports: enrolling, waiting on the on-chain timelock, or armed.
-            Native Solana/Stellar unwrap the DEK at connect; there is no
-            on-chain timelock. */}
+            reports: recovering or armed. Native Solana/Stellar unwrap the DEK
+            at connect. */}
         {deviceApproval === 'enclave' && (
         <div className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2.5">
           <div className="flex items-center gap-2.5">
@@ -240,18 +218,14 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
               <p className="text-[11px] text-muted">
                 {socialBusy
                   ? 'Verifying identity in the enclave'
-                  : socialWaiting
-                    ? `Timelock — device added in ~${formatDelay(socialRemaining)}`
-                    : chain === 'starknet'
+                  : chain === 'starknet'
                       ? 'Restore access with your login, no code to keep'
                       : 'This wallet restores with the same login'}
               </p>
             </div>
           </div>
-          {socialBusy || socialWaiting ? (
-            <span className="text-[12px] font-semibold text-muted">
-              {socialBusy ? 'Recovering…' : 'Pending'}
-            </span>
+          {socialBusy ? (
+            <span className="text-[12px] font-semibold text-muted">Recovering…</span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600">
               <Check size={13} /> Armed
