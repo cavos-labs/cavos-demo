@@ -28,8 +28,6 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
   const [recoveryCode, setRecoveryCode] = useState('');
   const [recoveryCopied, setRecoveryCopied] = useState(false);
 
-  const socialBusy = walletStatus.isSocialRecovering;
-
   const hasPasskey = walletStatus.hasPasskey;
   // The kit doesn't expose a "recovery configured" flag, so we infer it from
   // a successful setup stored locally for this address.
@@ -75,33 +73,7 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
 
       <div className="space-y-2.5">
         {/* Passkey */}
-        {chain === 'starknet' ? (
-        <div className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2.5">
-          <div className="flex items-center gap-2.5">
-            <Fingerprint size={16} className="text-ink" />
-            <div className="leading-tight">
-              <p className="text-[13px] font-medium text-ink">Passkey signer</p>
-              <p className="text-[11px] text-muted">
-                {hasPasskey ? 'Enabled' : 'Biometric / secure enclave'}
-              </p>
-            </div>
-          </div>
-          {hasPasskey ? (
-            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600">
-              <Check size={13} /> On
-            </span>
-          ) : (
-            <button
-              onClick={handlePasskey}
-              disabled={passkeyBusy || !passkeySupported}
-              title={!passkeySupported ? 'Passkeys not supported in this browser' : undefined}
-              className="rounded-md border border-line-strong bg-white px-2.5 py-1 text-[12px] font-semibold text-ink transition-colors hover:border-ink/40 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {passkeyBusy ? 'Enrolling…' : 'Enable'}
-            </button>
-          )}
-        </div>
-        ) : deviceApproval === 'passkey' ? (
+        {deviceApproval === 'passkey' ? (
         <div className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2.5">
           <div className="flex items-center gap-2.5">
             <Fingerprint size={16} className="text-ink" />
@@ -144,7 +116,7 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
           </p>
         )}
 
-        {chain !== 'solana' && (
+        {chain === 'stellar' && (
         <>
         <div className="rounded-lg border border-line bg-white px-3 py-2.5">
           <div className="flex items-center justify-between">
@@ -216,21 +188,13 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
             <div className="leading-tight">
               <p className="text-[13px] font-medium text-ink">Social recovery</p>
               <p className="text-[11px] text-muted">
-                {socialBusy
-                  ? 'Verifying identity in the enclave'
-                  : chain === 'starknet'
-                      ? 'Restore access with your login, no code to keep'
-                      : 'This wallet restores with the same login'}
+                This wallet restores with the same login
               </p>
             </div>
           </div>
-          {socialBusy ? (
-            <span className="text-[12px] font-semibold text-muted">Recovering…</span>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600">
-              <Check size={13} /> Armed
-            </span>
-          )}
+          <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600">
+            <Check size={13} /> Armed
+          </span>
         </div>
         )}
       </div>
