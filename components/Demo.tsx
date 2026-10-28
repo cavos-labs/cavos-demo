@@ -119,7 +119,7 @@ export function Demo({
   const [appName, setAppName] = useState('');
   const [appLogo, setAppLogo] = useState('');
   const [radius, setRadius] = useState(16);
-  const [providers, setProviders] = useState<ProviderKey[]>(['email', 'google', 'apple']);
+  const [providers, setProviders] = useState<ProviderKey[]>(['email', 'google', 'apple', 'github']);
 
   const { theme, backgroundColor } =
     background === 'custom'

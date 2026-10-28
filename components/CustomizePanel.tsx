@@ -1,14 +1,14 @@
 'use client';
 
 import { FcGoogle } from 'react-icons/fc';
-import { FaApple, FaEnvelope } from 'react-icons/fa6';
+import { FaApple, FaEnvelope, FaGithub } from 'react-icons/fa6';
 import { CHAIN_LIST, type Chain } from '@/lib/chains';
 import type { DeviceApproval } from '@/lib/deviceApproval';
 import { toggleSelectedChain } from '@/lib/deviceApproval';
 import { ChainLogo } from './ChainLogo';
 
 export type Background = 'white' | 'dark' | 'soft' | 'custom';
-export type ProviderKey = 'email' | 'google' | 'apple';
+export type ProviderKey = 'email' | 'google' | 'apple' | 'github';
 
 const ACCENTS = ['#402AFF', '#7C3AED', '#12B3A6', '#17B85A', '#FA5D3C'];
 
@@ -16,6 +16,7 @@ const PROVIDERS: { key: ProviderKey; label: string; icon: React.ReactNode }[] = 
   { key: 'email', label: 'Email', icon: <FaEnvelope className="text-white/70" /> },
   { key: 'google', label: 'Google', icon: <FcGoogle /> },
   { key: 'apple', label: 'Apple', icon: <FaApple className="text-white" /> },
+  { key: 'github', label: 'GitHub', icon: <FaGithub className="text-white" /> },
 ];
 
 interface Props {
