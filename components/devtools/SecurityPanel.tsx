@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useCavos } from '@cavos/kit/react';
-import { Shield, Fingerprint, KeyRound, Copy, Check, AlertCircle, Users } from 'lucide-react';
+import { Shield, Fingerprint, KeyRound, Copy, Check, AlertCircle, Users, Trash2 } from 'lucide-react';
 import type { DeviceApproval } from '@/lib/deviceApproval';
 
 /**
@@ -18,7 +18,11 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
     setupRecovery,
     passkeySupported,
     chain,
+    deleteAccount,
   } = useCavos();
+
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyError, setPasskeyError] = useState('');
@@ -61,6 +65,24 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
       setRecoveryError(e instanceof Error ? e.message : 'Could not set up recovery');
     } finally {
       setRecoveryBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleteBusy(true);
+    setDeleteError('');
+    try {
+      await deleteAccount();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '';
+      if (message.includes('the user cancelled')) return;
+      setDeleteError(
+        message.includes('consent_proof_required')
+          ? 'Restore this wallet on this device first, then delete the account.'
+          : message || 'Could not delete the account',
+      );
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -196,6 +218,28 @@ export function SecurityPanel({ deviceApproval }: { deviceApproval: DeviceApprov
             <Check size={13} /> Armed
           </span>
         </div>
+        )}
+
+        <div className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <Trash2 size={16} className="text-ink" />
+            <div className="leading-tight">
+              <p className="text-[13px] font-medium text-ink">Delete account</p>
+              <p className="text-[11px] text-muted">Removes your Cavos data. The wallet stays on-chain</p>
+            </div>
+          </div>
+          <button
+            onClick={handleDelete}
+            disabled={deleteBusy}
+            className="rounded-md border border-line-strong bg-white px-2.5 py-1 text-[12px] font-semibold text-red-600 transition-colors hover:border-red-600/40 disabled:opacity-50"
+          >
+            {deleteBusy ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+        {deleteError && (
+          <p className="flex items-start gap-1.5 px-1 text-[11.5px] text-red-600">
+            <AlertCircle size={12} className="mt-0.5 shrink-0" /> {deleteError}
+          </p>
         )}
       </div>
     </div>
